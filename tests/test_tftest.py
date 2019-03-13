@@ -99,7 +99,7 @@ def test_setup_files():
   with tempfile.TemporaryDirectory() as tmpdir:
     with tempfile.NamedTemporaryFile() as tmpfile:
       tf = tftest.TerraformTest(tmpdir)
-      tf.setup(False, [tmpfile.name])
+      tf.setup(extra_files=[tmpfile.name])
       assert_true(os.path.exists(os.path.join(
           tmpdir, os.path.basename(tmpfile.name))))
       tf = None
@@ -116,7 +116,7 @@ def test_autorun():
       Popen.return_value.returncode = 0
       with tempfile.TemporaryDirectory() as tmpdir:
         tf = tftest.TerraformTest(tmpdir)
-        tf.setup()
+        tf.setup(command='output', destroy=True)
         tf.teardown()
       # popen instantiations
       kwargs = {'cwd': tmpdir, 'env': {}, 'stderr': -1, 'stdout': -1}
