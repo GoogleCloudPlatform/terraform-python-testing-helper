@@ -14,19 +14,24 @@
 
 import setuptools
 
+from tftest import __version__
+
+
 with open("README.md", "r") as fh:
   long_description = fh.read()
 
+
 setuptools.setup(
     name="tftest",
-    version="0.0.1",
+    version=__version__,
     author="Ludovico Magnocavallo",
     author_email="ludomagno@google.com",
     description="Simple Terraform test helper",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/ludoo/tftest",
-    packages=['tftest'],
+    py_modules=['tftest'],
+    scripts=['tftest.py'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache 2.0",
