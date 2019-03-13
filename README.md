@@ -8,4 +8,39 @@ This module is heavily inspired by two projects: [Terragrunt](https://github.com
 
 ## Example Usage
 
-TODO: describe usage
+The `example` folder contains one example for each test style. This is a snippet from the plan-based tests:
+
+```python
+TF = tftest.TerraformTest(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'foo'))
+
+def setup():
+  TF.setup(command='plan')
+
+def test_resources():
+  """Test that plan contains all expected resources."""
+  values = re.findall(r'(?m)^\s*\+\s+(null_resource\S+)\s*^', TF.setup_output)
+  assert values == ['null_resource.foo_resource'], values
+```
+
+And from the apply-based tests:
+
+```python
+TF = tftest.TerraformTest(os.path.join(ROOT, 'foo'))
+
+def setup():
+  TF.setup(command='output', destroy=True)
+
+def teardown():
+  TF.teardown()
+
+def test_output():
+  """Test that apply creates the correct resources and outputs are correct."""
+  assert TF.setup_output['foos'] == [
+      {'foo': 'foo', 'index': '0'}], TF.setup_output['foos']
+
+def test_state():
+  """Test that state has the correct resources and attributes."""
+  resources = TF.state_pull().modules['root'].resources
+  assert resources['null_resource.foo_resource'].attributes['triggers.%'] == '2'
+```
