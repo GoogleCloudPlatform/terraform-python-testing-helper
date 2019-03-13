@@ -1,4 +1,4 @@
-# Terraform Test Helper
+# Python Test Helper for Terraform
 
 This simple helper facilitates testing Terraform modules from Python unit test. It does so by wrapping the Terraform executable, and exposing convenience methods to set up fixtures, execute terraform commands, and parse their output.
 
