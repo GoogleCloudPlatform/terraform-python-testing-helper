@@ -44,3 +44,7 @@ def test_state():
   resources = TF.state_pull().modules['root'].resources
   assert resources['null_resource.foo_resource'].attributes['triggers.%'] == '2'
 ```
+
+## Disclaimer
+
+This is not an officially supported Google product.
