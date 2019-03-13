@@ -175,8 +175,7 @@ class TerraformTest(object):
         os.path.join(os.path.dirname(__file__), '..'))
     self.terraform = terraform
     self.tfdir = self._abspath(tfdir)
-    self.last_output = None
-    self.last_state = None
+    self.setup_output = None
 
   @classmethod
   def _cleanup(cls, tfdir, filenames):
@@ -197,8 +196,8 @@ class TerraformTest(object):
     """Make relative path absolute from base dir."""
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
-  def setup(self, autorun=True, extra_files=None, plugin_dir=None,
-            init_vars=None, tf_vars=None, destroy=True):
+  def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
+            tf_vars=None, command=None, destroy=False):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -206,14 +205,14 @@ class TerraformTest(object):
     Terraform commands so that outputs and state can be accessed from tests.
 
     Args:
-      autorun: invoke the standard sequence of Terraform commands (init, apply,
-      output) automatically, destroying in case of errors during apply.
       extra_files: list of absolute or relative to base paths to be linked in
         the root module folder.
       plugin_dir: path to a plugin directory to be used for Terraform init, eg
         built with terraform-bundle.
       init_vars: Terraform backend configuration variables for init.
       tf_vars: Terraform variables for plan and apply.
+      command: run Terraform commands in order up to command, default to not
+        running any Terraform commands.
       destroy: run destroy in case of errors during apply.
 
     Returns:
@@ -237,11 +236,13 @@ class TerraformTest(object):
         _LOGGER.warn('no such file {}'.format(link_src))
     self._finalizer = weakref.finalize(
         self, self._cleanup, self.tfdir, filenames)
-    # run terraform commands in order or return
-    if not autorun:
+    if not command:
       return
     self.init(plugin_dir=plugin_dir, init_vars=init_vars)
-    return self.run_commands(tf_vars=tf_vars, destroy=destroy)
+    self.setup_output = self.run_commands(
+        tf_vars=tf_vars, plan=(command == 'plan'),
+        output=(command == 'output'), destroy=destroy)
+    return self.setup_output
 
   def run_commands(self, tf_vars=None, plan=False, output=True, destroy=True):
     """Convenience method to run a common set of commands in order.
@@ -252,25 +253,26 @@ class TerraformTest(object):
 
     Args:
       tf_vars: the Terraform variables to use for plan/apply/destroy
-      plan: run plan
-      output: run output
+      plan: run plan only
+      output: run output after apply
       destroy: run destroy if apply raises an error
 
     Returns:
       Wrapped output if output is run from here.
     """
     if plan:
-      self.plan(tf_vars=tf_vars)
+      return self.plan(tf_vars=tf_vars)
     # catch errors so we can run destroy before re-raising
     try:
-      self.apply(tf_vars=tf_vars)
+      result = self.apply(tf_vars=tf_vars)
     except TerraformTestError:
       if destroy:
         _LOGGER.warn('running teardown to clean up')
         self.teardown(tf_vars)
       raise
-    if output:
-      return self.output()
+    if not output:
+      return result
+    return self.output()
 
   def teardown(self, tf_vars=None):
     """Teardown method that runs destroy without raising errors."""
@@ -283,19 +285,18 @@ class TerraformTest(object):
     """Run Terraform init command."""
     cmd_args = parse_args(input=input, color=color,
                           plugin_dir=plugin_dir, init_vars=init_vars)
-    return self.execute_command('init', *cmd_args)
+    return self.execute_command('init', *cmd_args).out
 
   def plan(self, input=False, color=False, tf_vars=None):
     """Run Terraform plan command."""
     cmd_args = parse_args(input=input, color=color, tf_vars=tf_vars)
-    return self.execute_command('plan', *cmd_args)
+    return self.execute_command('plan', *cmd_args).out
 
   def apply(self, input=False, color=False, auto_approve=True, tf_vars=None):
     """Run Terraform apply command."""
     cmd_args = parse_args(input=input, color=color,
                           auto_approve=auto_approve, tf_vars=tf_vars)
-    result = self.execute_command('apply', *cmd_args)
-    return result
+    return self.execute_command('apply', *cmd_args).out
 
   def output(self, name=None, color=False, json_format=True):
     """Run Terraform output command."""
@@ -310,29 +311,28 @@ class TerraformTest(object):
         output = TerraformOutputs(json.loads(output))
       except json.JSONDecodeError as e:
         _LOGGER.warn('error decoding output: {}'.format(e))
-    self.last_output = output
     return output
 
   def destroy(self, color=False, auto_approve=True, tf_vars=None):
     """Run Terraform destroy command."""
     cmd_args = parse_args(
         color=color, auto_approve=auto_approve, tf_vars=tf_vars)
-    return self.execute_command('destroy', *cmd_args)
+    return self.execute_command('destroy', *cmd_args).out
 
   def refresh(self, color=False, lock=False, tf_vars=None):
     """Run Terraform refresh command."""
     cmd_args = parse_args(
         color=color, lock=lock, tf_vars=tf_vars)
-    return self.execute_command('refresh', *cmd_args)
+    return self.execute_command('refresh', *cmd_args).out
 
   def state_pull(self):
     """Pull state."""
     state = self.execute_command('state', 'pull')
     try:
-      self.last_state = TerraformState(json.loads(state.out))
+      state = TerraformState(json.loads(state.out))
     except json.JSONDecodeError as e:
       _LOGGER.warn('error decoding state: {}'.format(e))
-    return self.last_state
+    return state
 
   def execute_command(self, cmd, *cmd_args):
     """Run arbitrary Terraform command."""
