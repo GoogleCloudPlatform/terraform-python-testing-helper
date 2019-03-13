@@ -59,33 +59,39 @@ def test_parse_args():
 
 
 def test_json_output_class():
-  out = tftest.TerraformJSONOutputs(
+  out = tftest.TerraformOutputs(
       {'a': {'value': 1}, 'b': {'value': 2, 'sensitive': True}})
   assert_equals(out.sensitive, ('b',))
   assert_equals((out['a'], out['b']), (1, 2))
 
 
 def test_json_state_class():
-  s = tftest.TerraformJSONState({
+  s = tftest.TerraformState({
       'version': 'foo',
       'modules': [
           {
               'path': 'a',
               'outputs': {'a_out': {'value': 1}},
-              'resources': 'a_resources',
+              'resources': {'a_resource': {
+                  'provider': 'dummy', 'type': 'dummy',
+                  'attributes': {'id': 'a'}, 'depends_on': []
+              }},
               'depends_on': 'a_depends_on'
           },
           {
               'path': 'b',
               'outputs': {'b_out': {'value': 2}},
-              'resources': 'b_resources',
+              'resources': {'b_resource': {
+                  'provider': 'dummy', 'type': 'dummy',
+                  'attributes': {'id': 'b'}, 'depends_on': []
+              }},
               'depends_on': 'b_depends_on'
           }
       ]
   })
   assert_equals(sorted(list(s.modules.keys())), ['a', 'b'])
   assert_equals(type(s.modules['a']), tftest.TerraformStateModule)
-  assert_equals(type(s.modules['a'].outputs), tftest.TerraformJSONOutputs)
+  assert_equals(type(s.modules['a'].outputs), tftest.TerraformOutputs)
 
 
 def test_setup_files():

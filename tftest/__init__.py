@@ -28,6 +28,7 @@ import itertools
 import json
 import logging
 import os
+import shutil
 import subprocess
 import weakref
 
@@ -38,8 +39,8 @@ _LOGGER = logging.getLogger('tftest')
 TerraformCommandOutput = collections.namedtuple(
     'TerraformCommandOutput', 'retcode out err')
 
-TerraformStateModule = collections.namedtuple(
-    'TerraformStateModule', 'path resources outputs depends_on')
+TerraformStateResource = collections.namedtuple(
+    'TerraformStateResource', 'key provider type attributes depends_on raw')
 
 
 def parse_args(init_vars=None, tf_vars=None, **kw):
@@ -99,22 +100,38 @@ class TerraformJSONBase(object):
     return str(self.raw)
 
 
-class TerraformJSONOutputs(TerraformJSONBase):
+class TerraformOutputs(TerraformJSONBase):
   """Minimal wrapper to directly expose output values."""
 
   def __init__(self, raw):
-    super(TerraformJSONOutputs, self).__init__(raw)
+    super(TerraformOutputs, self).__init__(raw)
     self.sensitive = tuple(k for k, v in raw.items() if v.get('sensitive'))
 
   def __getitem__(self, name):
     return self.raw[name]['value']
 
 
-class TerraformJSONState(TerraformJSONBase):
+class TerraformStateModule(object):
+  """Minimal wrapper for Terraform state modules."""
+
+  def __init__(self, path, raw):
+    self._raw = raw
+    self.path = path
+    self.outputs = TerraformOutputs(raw['outputs'])
+    self.depends_on = raw['depends_on']
+    # key type provider attributes depends_on
+    self.resources = {}
+    for k, v in raw['resources'].items():
+      self.resources[k] = TerraformStateResource(
+          k, v['provider'], v['type'],
+          v.get('primary', {}).get('attributes', {}), v['depends_on'], v)
+
+
+class TerraformState(TerraformJSONBase):
   """Minimal wrapper for Terraform state JSON format."""
 
   def __init__(self, raw):
-    super(TerraformJSONState, self).__init__(raw)
+    super(TerraformState, self).__init__(raw)
     self.modules = {}
     for k, v in raw.items():
       if k != 'modules':
@@ -122,9 +139,7 @@ class TerraformJSONState(TerraformJSONBase):
         continue
       for mod in v:
         path = '.'.join(mod['path'])
-        self.modules[path] = TerraformStateModule(
-            path, mod['resources'],
-            TerraformJSONOutputs(mod['outputs']), mod['depends_on'])
+        self.modules[path] = TerraformStateModule(path, mod)
 
 
 class TerraformTest(object):
@@ -132,42 +147,57 @@ class TerraformTest(object):
 
   This helper class can be used to set up fixtures in Terraform tests, so that
   the usual Terraform commands (init, plan, apply, output, destroy) can be run
-  on a module. Configuration is done in the setup method, through files that
+  on a module. Configuration is done at instantiation first, by passing in the
+  Terraform root module path, and the in the setup method through files that
   will be temporarily linked in the module, and Terraform variables.
 
   The standard way of using this is by calling setup to configure the module
   through temporarily linked Terraform files and variables, run one or more
-  Terraform commands, the check command output, state, or created resources
+  Terraform commands, then check command output, state, or created resources
   from individual tests.
+
+  The local .terraform directory (including local state) and any linked file
+  are removed when the instance is garbage collected. Destroy is only called
+  from the teardown() method, or on error when using setup with autorun.
 
   Args:
     tfdir: the Terraform module directory to test, either an absolute path, or
       relative to basedir.
     basedir: optional base directory to use for relative paths, defaults to the
       directory above the one this module lives in.
+    terraform: path to the Terraform command.
   """
 
-  # TODO: add backend_config and terraform_tfvars arguments
   def __init__(self, tfdir, basedir=None, terraform='terraform'):
     """Set Terraform folder to operate on, and optional base directory."""
-    self._basedir = basedir or os.getcwd()
+    self._basedir = basedir or os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..'))
     self.terraform = terraform
     self.tfdir = self._abspath(tfdir)
     self.last_output = None
     self.last_state = None
 
   @classmethod
-  def _cleanup(cls, filenames):
-    _LOGGER.debug('cleaning up %s', filenames)
+  def _cleanup(cls, tfdir, filenames):
+    """Remove linked files and .terraform folder at instance deletion."""
+    _LOGGER.debug('cleaning up %s %s', tfdir, filenames)
+    path = os.path.join(tfdir, '.terraform')
+    if os.path.isdir(path):
+      shutil.rmtree(path)
+    path = os.path.join(tfdir, 'terraform.tfstate')
+    if os.path.isfile(path):
+      os.unlink(path)
     for filename in filenames:
-      os.unlink(filename)
+      path = os.path.join(tfdir, filename)
+      if os.path.islink(path):
+        os.unlink(path)
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
   def setup(self, autorun=True, extra_files=None, plugin_dir=None,
-            init_vars=None, tf_vars=None):
+            init_vars=None, tf_vars=None, destroy=True):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -175,34 +205,42 @@ class TerraformTest(object):
     Terraform commands so that outputs and state can be accessed from tests.
 
     Args:
-      autorun: invoke the standard sequence of Terraform commands (init, plan,
-        apply, output) automatically, and flag destroy to be run in teardown.
-      extra_files: list of files to be linked in the temporary working
-        directory, absolute or relative to base paths.
-      plugin_dir: path to a plugin directory to be used for Terraform init.
+      autorun: invoke the standard sequence of Terraform commands (init, apply,
+      output) automatically, destroying in case of errors during apply.
+      extra_files: list of absolute or relative to base paths to be linked in
+        the root module folder.
+      plugin_dir: path to a plugin directory to be used for Terraform init, eg
+        built with terraform-bundle.
       init_vars: Terraform backend configuration variables for init.
       tf_vars: Terraform variables for plan and apply.
+      destroy: run destroy in case of errors during apply.
+
+    Returns:
+      Wrapped output if apply is run from here.
     """
     # link extra files inside dir
     filenames = []
     for link_src in (extra_files or []):
       link_src = self._abspath(link_src)
+      filename = os.path.basename(link_src)
       if os.path.isfile(link_src):
-        link_dst = os.path.join(self.tfdir, os.path.basename(link_src))
+        link_dst = os.path.join(self.tfdir, filename)
         try:
           os.symlink(link_src, link_dst)
         except FileExistsError as e:  # pylint:disable=undefined-variable
           _LOGGER.warn(e)
         else:
-          filenames.append(link_dst)
+          _LOGGER.debug('linked %s', link_src)
+          filenames.append(filename)
       else:
         _LOGGER.warn('no such file {}'.format(link_src))
-    self._finalizer = weakref.finalize(self, self._cleanup, filenames)
+    self._finalizer = weakref.finalize(
+        self, self._cleanup, self.tfdir, filenames)
     # run terraform commands in order or return
     if not autorun:
       return
     self.init(plugin_dir=plugin_dir, init_vars=init_vars)
-    self.run_commands(tf_vars=tf_vars)
+    return self.run_commands(tf_vars=tf_vars, destroy=destroy)
 
   def run_commands(self, tf_vars=None, plan=False, output=True, destroy=True):
     """Convenience method to run a common set of commands in order.
@@ -216,6 +254,9 @@ class TerraformTest(object):
       plan: run plan
       output: run output
       destroy: run destroy if apply raises an error
+
+    Returns:
+      Wrapped output if output is run from here.
     """
     if plan:
       self.plan(tf_vars=tf_vars)
@@ -228,7 +269,7 @@ class TerraformTest(object):
         self.teardown(tf_vars)
       raise
     if output:
-      self.output()
+      return self.output()
 
   def teardown(self, tf_vars=None):
     """Teardown method that runs destroy without raising errors."""
@@ -265,7 +306,7 @@ class TerraformTest(object):
     _LOGGER.debug('output %s', output)
     if json_format:
       try:
-        output = TerraformJSONOutputs(json.loads(output))
+        output = TerraformOutputs(json.loads(output))
       except json.JSONDecodeError as e:
         _LOGGER.warn('error decoding output: {}'.format(e))
     self.last_output = output
@@ -287,7 +328,7 @@ class TerraformTest(object):
     """Pull state."""
     state = self.execute_command('state', 'pull')
     try:
-      self.last_state = TerraformJSONState(json.loads(state.out))
+      self.last_state = TerraformState(json.loads(state.out))
     except json.JSONDecodeError as e:
       _LOGGER.warn('error decoding state: {}'.format(e))
     return self.last_state
