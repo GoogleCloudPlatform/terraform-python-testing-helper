@@ -32,7 +32,7 @@ import shutil
 import subprocess
 import weakref
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -171,8 +171,7 @@ class TerraformTest(object):
 
   def __init__(self, tfdir, basedir=None, terraform='terraform'):
     """Set Terraform folder to operate on, and optional base directory."""
-    self._basedir = basedir or os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..'))
+    self._basedir = basedir or os.getcwd()
     self.terraform = terraform
     self.tfdir = self._abspath(tfdir)
     self.setup_output = None

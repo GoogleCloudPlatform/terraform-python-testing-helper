@@ -31,7 +31,6 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/GoogleCloudPlatform/terraform-python-testing-helper",
     py_modules=['tftest'],
-    scripts=['tftest.py'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
