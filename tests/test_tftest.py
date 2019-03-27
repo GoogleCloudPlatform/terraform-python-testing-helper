@@ -17,13 +17,14 @@ import os
 import tempfile
 import unittest.mock
 
-from nose.tools import assert_equals, assert_false, assert_true
-
 import tftest
 
 
 _ARGS_TESTS = (
     ({'auto_approve': False}, []),
+    ({'backend': True}, []),
+    ({'backend': None}, []),
+    ({'backend': False}, ['-backend=false']),
     ({'color': True}, []),
     ({'input': True}, []),
     ({'json_format': False}, []),
@@ -46,23 +47,20 @@ _AUTORUN_CALLS = [
 
 
 def test_parse_args():
-  assert_equals(tftest.parse_args(), [])
+  assert tftest.parse_args() == []
   for kwargs, expected in _ARGS_TESTS:
-    assert_equals(tftest.parse_args(**kwargs), expected)
-  assert_equals(
-      sorted(tftest.parse_args(init_vars={'a': 1, 'b': '["2"]'})),
-      sorted(["-backend-config='a=1'", '-backend-config=\'b=["2"]\'']))
-  assert_equals(
-      sorted(tftest.parse_args(tf_vars={'a': 1, 'b': '["2"]'})),
-      sorted(['-var', 'b=["2"]', '-var', 'a=1'])
-  )
+    assert tftest.parse_args(**kwargs) == expected
+  assert sorted(tftest.parse_args(init_vars={'a': 1, 'b': '["2"]'})) == sorted(
+      ["-backend-config='a=1'", '-backend-config=\'b=["2"]\''])
+  assert sorted(tftest.parse_args(tf_vars={'a': 1, 'b': '["2"]'})) == sorted(
+      ['-var', 'b=["2"]', '-var', 'a=1'])
 
 
 def test_json_output_class():
   out = tftest.TerraformOutputs(
       {'a': {'value': 1}, 'b': {'value': 2, 'sensitive': True}})
-  assert_equals(out.sensitive, ('b',))
-  assert_equals((out['a'], out['b']), (1, 2))
+  assert out.sensitive == ('b',)
+  assert (out['a'], out['b']) == (1, 2)
 
 
 def test_json_state_class():
@@ -89,9 +87,9 @@ def test_json_state_class():
           }
       ]
   })
-  assert_equals(sorted(list(s.modules.keys())), ['a', 'b'])
-  assert_equals(type(s.modules['a']), tftest.TerraformStateModule)
-  assert_equals(type(s.modules['a'].outputs), tftest.TerraformOutputs)
+  assert sorted(list(s.modules.keys())) == ['a', 'b']
+  assert type(s.modules['a']) == tftest.TerraformStateModule
+  assert type(s.modules['a'].outputs) == tftest.TerraformOutputs
 
 
 def test_setup_files():
@@ -100,11 +98,11 @@ def test_setup_files():
     with tempfile.NamedTemporaryFile() as tmpfile:
       tf = tftest.TerraformTest(tmpdir)
       tf.setup(extra_files=[tmpfile.name])
-      assert_true(os.path.exists(os.path.join(
-          tmpdir, os.path.basename(tmpfile.name))))
+      assert os.path.exists(os.path.join(
+          tmpdir, os.path.basename(tmpfile.name)))
       tf = None
-      assert_false(os.path.exists(os.path.join(
-          tmpdir, os.path.basename(tmpfile.name))))
+      assert not os.path.exists(os.path.join(
+          tmpdir, os.path.basename(tmpfile.name)))
 
 
 def test_autorun():
@@ -122,4 +120,4 @@ def test_autorun():
       kwargs = {'cwd': tmpdir, 'env': {}, 'stderr': -1, 'stdout': -1}
       call_args_list = Popen.call_args_list
       for i, call in enumerate(call_args_list):
-        assert_equals(call, unittest.mock.call(_AUTORUN_CALLS[i], **kwargs))
+        assert call == unittest.mock.call(_AUTORUN_CALLS[i], **kwargs)

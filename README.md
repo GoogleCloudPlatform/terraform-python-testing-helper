@@ -45,6 +45,10 @@ def test_state():
   assert resources['null_resource.foo_resource'].attributes['triggers.%'] == '2'
 ```
 
+## Testing
+
+The simple tests in the [tests](tests/) folder require Python 3.x and can be run with `nosetests3` or `pytest`.
+
 ## Disclaimer
 
 This is not an officially supported Google product.

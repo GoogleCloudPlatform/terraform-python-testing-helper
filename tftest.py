@@ -32,7 +32,7 @@ import shutil
 import subprocess
 import weakref
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -59,6 +59,8 @@ def parse_args(init_vars=None, tf_vars=None, **kw):
   cmd_args = []
   if kw.get('auto_approve'):
     cmd_args.append('-auto-approve')
+  if kw.get('backend') is False:
+    cmd_args.append('-backend=false')
   if kw.get('color') is False:
     cmd_args.append('-no-color')
   if kw.get('input') is False:
@@ -196,7 +198,7 @@ class TerraformTest(object):
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
   def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
-            tf_vars=None, command=None, destroy=False):
+            tf_vars=None, backend=True, command=None, destroy=False):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -227,17 +229,17 @@ class TerraformTest(object):
         try:
           os.symlink(link_src, link_dst)
         except FileExistsError as e:  # pylint:disable=undefined-variable
-          _LOGGER.warn(e)
+          _LOGGER.warning(e)
         else:
           _LOGGER.debug('linked %s', link_src)
           filenames.append(filename)
       else:
-        _LOGGER.warn('no such file {}'.format(link_src))
+        _LOGGER.warning('no such file {}'.format(link_src))
     self._finalizer = weakref.finalize(
         self, self._cleanup, self.tfdir, filenames)
+    self.init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend)
     if not command:
       return
-    self.init(plugin_dir=plugin_dir, init_vars=init_vars)
     self.setup_output = self.run_commands(
         tf_vars=tf_vars, plan=(command == 'plan'),
         output=(command == 'output'), destroy=destroy)
@@ -266,7 +268,7 @@ class TerraformTest(object):
       result = self.apply(tf_vars=tf_vars)
     except TerraformTestError:
       if destroy:
-        _LOGGER.warn('running teardown to clean up')
+        _LOGGER.warning('running teardown to clean up')
         self.teardown(tf_vars)
       raise
     if not output:
@@ -280,7 +282,7 @@ class TerraformTest(object):
     except TerraformTestError:
       _LOGGER.exception('error in teardown destroy')
 
-  def init(self, input=False, color=False, plugin_dir=None, init_vars=None):
+  def init(self, input=False, color=False, plugin_dir=None, init_vars=None, backend=True):
     """Run Terraform init command."""
     cmd_args = parse_args(input=input, color=color,
                           plugin_dir=plugin_dir, init_vars=init_vars)
@@ -309,7 +311,7 @@ class TerraformTest(object):
       try:
         output = TerraformOutputs(json.loads(output))
       except json.JSONDecodeError as e:
-        _LOGGER.warn('error decoding output: {}'.format(e))
+        _LOGGER.warning('error decoding output: {}'.format(e))
     return output
 
   def destroy(self, color=False, auto_approve=True, tf_vars=None):
@@ -330,7 +332,7 @@ class TerraformTest(object):
     try:
       state = TerraformState(json.loads(state.out))
     except json.JSONDecodeError as e:
-      _LOGGER.warn('error decoding state: {}'.format(e))
+      _LOGGER.warning('error decoding state: {}'.format(e))
     return state
 
   def execute_command(self, cmd, *cmd_args):
