@@ -32,7 +32,7 @@ import shutil
 import subprocess
 import weakref
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -284,7 +284,7 @@ class TerraformTest(object):
 
   def init(self, input=False, color=False, plugin_dir=None, init_vars=None, backend=True):
     """Run Terraform init command."""
-    cmd_args = parse_args(input=input, color=color,
+    cmd_args = parse_args(input=input, color=color, backend=backend,
                           plugin_dir=plugin_dir, init_vars=init_vars)
     return self.execute_command('init', *cmd_args).out
 
