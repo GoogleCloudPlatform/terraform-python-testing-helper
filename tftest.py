@@ -63,6 +63,8 @@ def parse_args(init_vars=None, tf_vars=None, **kw):
     cmd_args.append('-backend=false')
   if kw.get('color') is False:
     cmd_args.append('-no-color')
+  if kw.get('force_copy'):
+    cmd_args.append('-force-copy')
   if kw.get('input') is False:
     cmd_args.append('-input=false')
   if kw.get('json_format') is True:
@@ -71,6 +73,8 @@ def parse_args(init_vars=None, tf_vars=None, **kw):
     cmd_args.append('-lock=false')
   if kw.get('plugin_dir'):
     cmd_args += ['-plugin-dir', kw['plugin_dir']]
+  if kw.get('refresh') is False:
+    cmd_args.append('-refresh=false')
   if isinstance(init_vars, dict):
     cmd_args += ['-backend-config=\'{}={}\''.format(k, v)
                  for k, v in init_vars.items()]
@@ -282,15 +286,18 @@ class TerraformTest(object):
     except TerraformTestError:
       _LOGGER.exception('error in teardown destroy')
 
-  def init(self, input=False, color=False, plugin_dir=None, init_vars=None, backend=True):
+  def init(self, input=False, color=False, force_copy=False, plugin_dir=None,
+           init_vars=None, backend=True):
     """Run Terraform init command."""
     cmd_args = parse_args(input=input, color=color, backend=backend,
-                          plugin_dir=plugin_dir, init_vars=init_vars)
+                          force_copy=force_copy, plugin_dir=plugin_dir,
+                          init_vars=init_vars)
     return self.execute_command('init', *cmd_args).out
 
-  def plan(self, input=False, color=False, tf_vars=None):
+  def plan(self, input=False, color=False, refresh=True, tf_vars=None):
     """Run Terraform plan command."""
-    cmd_args = parse_args(input=input, color=color, tf_vars=tf_vars)
+    cmd_args = parse_args(input=input, color=color,
+                          refresh=refresh, tf_vars=tf_vars)
     return self.execute_command('plan', *cmd_args).out
 
   def apply(self, input=False, color=False, auto_approve=True, tf_vars=None):

@@ -21,22 +21,28 @@ import tftest
 
 
 _ARGS_TESTS = (
+    ({'auto_approve': True}, ['-auto-approve']),
     ({'auto_approve': False}, []),
     ({'backend': True}, []),
     ({'backend': None}, []),
     ({'backend': False}, ['-backend=false']),
     ({'color': True}, []),
-    ({'input': True}, []),
-    ({'json_format': False}, []),
-    ({'lock': True}, []),
-    ({'plugin_dir': ''}, []),
-    ({'auto_approve': True}, ['-auto-approve']),
     ({'color': False}, ['-no-color']),
+    ({'color': False, 'input': False}, ['-no-color', '-input=false']),
+    ({'force_copy': True}, ['-force-copy']),
+    ({'force_copy': None}, []),
+    ({'force_copy': False}, []),
+    ({'input': True}, []),
     ({'input': False}, ['-input=false']),
     ({'json_format': True}, ['-json']),
+    ({'json_format': False}, []),
+    ({'lock': True}, []),
     ({'lock': False}, ['-lock=false']),
+    ({'plugin_dir': ''}, []),
     ({'plugin_dir': 'abc'}, ['-plugin-dir', 'abc']),
-    ({'color': False, 'input': False}, ['-no-color', '-input=false'])
+    ({'refresh': True}, []),
+    ({'refresh': None}, []),
+    ({'refresh': False}, ['-refresh=false']),
 )
 _AUTORUN_CALLS = [
     ['terraform', 'init', '-no-color', '-input=false'],
