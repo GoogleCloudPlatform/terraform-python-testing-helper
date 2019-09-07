@@ -32,7 +32,7 @@ import shutil
 import subprocess
 import weakref
 
-__version__ = '0.4.1'
+__version__ = '0.5.0'
 
 _LOGGER = logging.getLogger('tftest')
 
