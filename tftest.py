@@ -30,9 +30,10 @@ import logging
 import os
 import shutil
 import subprocess
+import tempfile
 import weakref
 
-__version__ = '0.5.0'
+__version__ = '0.6.0'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -299,6 +300,20 @@ class TerraformTest(object):
     cmd_args = parse_args(input=input, color=color,
                           refresh=refresh, tf_vars=tf_vars)
     return self.execute_command('plan', *cmd_args).out
+
+  def plan_out(self, input=False, color=False, refresh=True, tf_vars=None):
+    """Run Terraform plan command and return saved output as JSON."""
+    cmd_args = parse_args(input=input, color=color,
+                          refresh=refresh, tf_vars=tf_vars)
+    with tempfile.NamedTemporaryFile() as fp:
+      cmd_args.append('-out={}'.format(fp.name))
+      self.execute_command('plan', *cmd_args)
+      result = self.execute_command('show', '-no-color', '-json', fp.name)
+    try:
+      return json.loads(result.out)
+    except json.JSONDecodeError as e:
+      _LOGGER.warning('error decoding plan output: {}'.format(e))
+    return result
 
   def apply(self, input=False, color=False, auto_approve=True, tf_vars=None):
     """Run Terraform apply command."""
