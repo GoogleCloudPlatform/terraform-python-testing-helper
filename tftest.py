@@ -33,7 +33,7 @@ import subprocess
 import tempfile
 import weakref
 
-__version__ = '0.6.1'
+__version__ = '0.6.2'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -132,9 +132,12 @@ class TerraformPlanOutput(object):
   @property
   def modules(self):
     if self._modules is None:
-      modules = self._raw['planned_values']['root_module']['child_modules']
-      self._modules = dict((mod['address'], mod['resources'])
-                           for mod in modules)
+      modules = {}
+      for mod in self._raw['planned_values']['root_module']['child_modules']:
+        modules[mod['address']] = dict(
+            (r['address'], r) for r in mod['resources']
+        )
+      self._modules = modules
     return self._modules
 
   @property
