@@ -393,8 +393,11 @@ class TerraformTest(object):
     _LOGGER.debug([cmd, cmd_args])
     cmdline = [self.terraform, cmd]
     cmdline += cmd_args
-    p = subprocess.Popen(cmdline, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                         cwd=self.tfdir, env=os.environ.copy())
+    try:
+      p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE, cwd=self.tfdir, env=os.environ.copy())
+    except FileNotFoundError as e:
+      raise TerraformTestError('Terraform executable not found: %s' % e)
     out, err = p.communicate()
     out = out.decode('utf-8', errors='ignore')
     err = err.decode('utf-8', errors='ignore')

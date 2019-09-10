@@ -160,7 +160,7 @@ def test_plan_out_class():
   assert plan_out.terraform_version == "0.12.6", plan_out.terraform_version
   assert plan_out.variables['foo'] == 'bar'
   assert plan_out.outputs['spam'] == 'baz'
-  assert plan_out.modules['module.eggs'] == []
+  assert plan_out.modules['module.eggs'] == {}
   assert plan_out.resource_changes['module.spam.resource_type.resource.name'] == s['resource_changes'][0]
   assert plan_out.configuration == s['configuration']
 
