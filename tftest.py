@@ -108,15 +108,44 @@ class TerraformJSONBase(object):
     return str(self.raw)
 
 
-class TerraformOutputs(TerraformJSONBase):
-  """Minimal wrapper to directly expose output values."""
+class TerraformValueDict(TerraformJSONBase):
+  """Minimal wrapper to directly expose outputs or variables."""
 
   def __init__(self, raw):
-    super(TerraformOutputs, self).__init__(raw)
+    super(TerraformValueDict, self).__init__(raw)
+    # only matters for outputs
     self.sensitive = tuple(k for k, v in raw.items() if v.get('sensitive'))
 
   def __getitem__(self, name):
     return self.raw[name]['value']
+
+
+class TerraformPlanOutput(object):
+  """Minimal wrapper for Terraform plan JSON output."""
+
+  def __init__(self, raw):
+    self._raw = raw
+    self.variables = TerraformValueDict(raw['variables'])
+    self.outputs = TerraformValueDict(raw['planned_values']['outputs'])
+    self._modules = self._resources = None
+
+  @property
+  def modules(self):
+    if self._modules is None:
+      modules = self._raw['planned_values']['root_module']['child_modules']
+      self._modules = dict((mod['address'], mod['resources'])
+                           for mod in modules)
+    return self._modules
+
+  @property
+  def resource_changes(self):
+    if self._resources is None:
+      self._resources = dict((v['address'], v)
+                             for v in self._raw['resource_changes'])
+    return self._resources
+
+  def __getattr__(self, name):
+    return self._raw[name]
 
 
 class TerraformStateModule(object):
@@ -125,9 +154,8 @@ class TerraformStateModule(object):
   def __init__(self, path, raw):
     self._raw = raw
     self.path = path
-    self.outputs = TerraformOutputs(raw['outputs'])
+    self.outputs = TerraformValueDict(raw['outputs'])
     self.depends_on = raw['depends_on']
-    # key type provider attributes depends_on
     self.resources = {}
     for k, v in raw['resources'].items():
       self.resources[k] = TerraformStateResource(
@@ -301,7 +329,7 @@ class TerraformTest(object):
                           refresh=refresh, tf_vars=tf_vars)
     return self.execute_command('plan', *cmd_args).out
 
-  def plan_out(self, input=False, color=False, refresh=True, tf_vars=None):
+  def plan_out(self, input=False, color=False, refresh=True, tf_vars=None, parsed=True):
     """Run Terraform plan command and return saved output as JSON."""
     cmd_args = parse_args(input=input, color=color,
                           refresh=refresh, tf_vars=tf_vars)
@@ -310,10 +338,10 @@ class TerraformTest(object):
       self.execute_command('plan', *cmd_args)
       result = self.execute_command('show', '-no-color', '-json', fp.name)
     try:
-      return json.loads(result.out)
+      plan_out = json.loads(result.out)
     except json.JSONDecodeError as e:
       _LOGGER.warning('error decoding plan output: {}'.format(e))
-    return result
+    return plan_out if not parsed else TerraformPlanOutput(plan_out)
 
   def apply(self, input=False, color=False, auto_approve=True, tf_vars=None):
     """Run Terraform apply command."""
@@ -331,7 +359,7 @@ class TerraformTest(object):
     _LOGGER.debug('output %s', output)
     if json_format:
       try:
-        output = TerraformOutputs(json.loads(output))
+        output = TerraformValueDict(json.loads(output))
       except json.JSONDecodeError as e:
         _LOGGER.warning('error decoding output: {}'.format(e))
     return output
