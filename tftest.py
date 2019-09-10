@@ -117,7 +117,7 @@ class TerraformValueDict(TerraformJSONBase):
     self.sensitive = tuple(k for k, v in raw.items() if v.get('sensitive'))
 
   def __getitem__(self, name):
-    return self.raw[name]['value']
+    return self.raw[name].get('value')
 
 
 class TerraformPlanOutput(object):
