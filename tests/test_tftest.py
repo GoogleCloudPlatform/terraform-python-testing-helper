@@ -53,6 +53,7 @@ _AUTORUN_CALLS = [
 
 
 def test_parse_args():
+  "Test parsing Terraform command arguments."
   assert tftest.parse_args() == []
   for kwargs, expected in _ARGS_TESTS:
     assert tftest.parse_args(**kwargs) == expected
@@ -63,13 +64,15 @@ def test_parse_args():
 
 
 def test_json_output_class():
-  out = tftest.TerraformOutputs(
+  "Test the output and variables wrapper class."
+  out = tftest.TerraformValueDict(
       {'a': {'value': 1}, 'b': {'value': 2, 'sensitive': True}})
   assert out.sensitive == ('b',)
   assert (out['a'], out['b']) == (1, 2)
 
 
 def test_json_state_class():
+  "Test the state wrapper class."
   s = tftest.TerraformState({
       'version': 'foo',
       'modules': [
@@ -95,7 +98,71 @@ def test_json_state_class():
   })
   assert sorted(list(s.modules.keys())) == ['a', 'b']
   assert type(s.modules['a']) == tftest.TerraformStateModule
-  assert type(s.modules['a'].outputs) == tftest.TerraformOutputs
+  assert type(s.modules['a'].outputs) == tftest.TerraformValueDict
+
+
+def test_plan_out_class():
+  "Test the plan JSON output wrapper class."
+  s = {
+      "format_version": "0.1",
+      "terraform_version": "0.12.6",
+      "variables": {
+          "foo": {
+              "value": "bar"
+          }
+      },
+      "planned_values": {
+          "outputs": {
+              "spam": {
+                  "sensitive": False,
+                  "value": "baz"
+              },
+          },
+          "root_module": {
+              "child_modules": [
+                  {
+                      "resources": [],
+                      "address": "module.eggs"
+                  }
+              ]
+          }
+      },
+      "resource_changes": [
+          {
+              "address": "module.spam.resource_type.resource.name",
+              "module_address": "module.spam",
+              "mode": "managed"
+          }
+      ],
+      "output_changes": {
+          "spam": {
+              "actions": [
+                  "create"
+              ],
+              "before": None,
+              "after": "bar",
+              "after_unknown": False
+          },
+      },
+      "prior_state": {
+          "format_version": "0.1",
+          "terraform_version": "0.12.6"
+      },
+      "configuration": {
+          "provider_config": {
+              "google": {
+                  "name": "google"
+              }
+          },
+      }
+  }
+  plan_out = tftest.TerraformPlanOutput(s)
+  assert plan_out.terraform_version == "0.12.6", plan_out.terraform_version
+  assert plan_out.variables['foo'] == 'bar'
+  assert plan_out.outputs['spam'] == 'baz'
+  assert plan_out.modules['module.eggs'] == []
+  assert plan_out.resource_changes['module.spam.resource_type.resource.name'] == s['resource_changes'][0]
+  assert plan_out.configuration == s['configuration']
 
 
 def test_setup_files():
