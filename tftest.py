@@ -93,7 +93,7 @@ class TerraformTestError(Exception):
 
 
 class TerraformJSONBase(object):
-  """Base class for JSON wrappers."""
+  "Base class for JSON wrappers."
 
   def __init__(self, raw):
     self.raw = raw
@@ -109,7 +109,7 @@ class TerraformJSONBase(object):
 
 
 class TerraformValueDict(TerraformJSONBase):
-  """Minimal wrapper to directly expose outputs or variables."""
+  "Minimal wrapper to directly expose outputs or variables."
 
   def __init__(self, raw):
     super(TerraformValueDict, self).__init__(raw)
@@ -120,39 +120,58 @@ class TerraformValueDict(TerraformJSONBase):
     return self.raw[name].get('value')
 
 
-class TerraformPlanOutput(object):
-  """Minimal wrapper for Terraform plan JSON output."""
+class TerraformPlanModule(object):
+  "Minimal wrapper for Terraform plan JSON output modules in planned values."
 
   def __init__(self, raw):
     self._raw = raw
-    self.variables = TerraformValueDict(raw['variables'])
-    self.outputs = TerraformValueDict(raw['planned_values']['outputs'])
+    self._resources = {}
     self._modules = self._resources = None
 
   @property
   def modules(self):
     if self._modules is None:
-      modules = {}
-      for mod in self._raw['planned_values']['root_module']['child_modules']:
-        modules[mod['address']] = dict(
-            (r['address'], r) for r in mod['resources']
-        )
-      self._modules = modules
+      self._modules = dict((mod['address'], TerraformPlanModule(mod))
+                           for mod in self._raw.get('child_modules'))
     return self._modules
 
   @property
-  def resource_changes(self):
+  def resources(self):
     if self._resources is None:
-      self._resources = dict((v['address'], v)
-                             for v in self._raw['resource_changes'])
+      self._resources = dict((res['address'], res)
+                             for res in self._raw.get('resources', []))
     return self._resources
 
-  def __getattr__(self, name):
-    return self._raw[name]
+
+class TerraformPlanOutput(object):
+  "Minimal wrapper for Terraform plan JSON output."
+
+  def __init__(self, raw):
+    self._raw = raw
+    self._resource_changes = None
+    self.root_module = TerraformPlanModule(
+        raw['planned_values']['root_module'])
+    self.outputs = TerraformValueDict(raw['planned_values']['outputs'])
+    self.variables = TerraformValueDict(raw['variables'])
+
+  @property
+  def resource_changes(self):
+    if self._resource_changes is None:
+      self._resource_changes = dict((v['address'], v)
+                                    for v in self._raw['resource_changes'])
+    return self._resource_changes
+
+  @property
+  def resources(self):
+    return self.root_module.resources
+
+  @property
+  def modules(self):
+    return self.root_module.modules
 
 
 class TerraformStateModule(object):
-  """Minimal wrapper for Terraform state modules."""
+  "Minimal wrapper for Terraform state modules."
 
   def __init__(self, path, raw):
     self._raw = raw
@@ -167,7 +186,7 @@ class TerraformStateModule(object):
 
 
 class TerraformState(TerraformJSONBase):
-  """Minimal wrapper for Terraform state JSON format."""
+  "Minimal wrapper for Terraform state JSON format."
 
   def __init__(self, raw):
     super(TerraformState, self).__init__(raw)

@@ -119,12 +119,25 @@ def test_plan_out_class():
               },
           },
           "root_module": {
-              "child_modules": [
-                  {
-                      "resources": [],
-                      "address": "module.eggs"
+              "child_modules": [{
+                  "resources": [{
+                      "address": "module.eggs.google_project.project",
+                      "type": "google_project",
+                      "name": "project",
+                      "provider_name": "google",
+                      "values": {"foo": "foo_value"}
+                  }],
+                  "child_modules": [{
+                      "resources": [{
+                          "address": "module.eggs.google_project.project",
+                          "type": "google_project",
+                          "name": "project",
+                          "provider_name": "google",
+                          "values": {"foo": "foo_value"}
+                      }],
                   }
-              ]
+                  ]
+              }]
           }
       },
       "resource_changes": [
