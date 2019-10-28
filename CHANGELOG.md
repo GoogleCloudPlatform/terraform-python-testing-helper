@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - refactor plan output attributes (breaking change)
+- refactor tests
 
 
 ### Removed
