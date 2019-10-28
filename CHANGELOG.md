@@ -14,3 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - refactor plan output attributes (breaking change)
+
+
+### Removed
+
+- refactor the module interface (breaking change)
+  - remove the ability to run commands implicitly in `setup`
+  - remove the `run_commands` method
+  - remove the `teardown` method
+  - unify the `plan` and `plan_out` methods
