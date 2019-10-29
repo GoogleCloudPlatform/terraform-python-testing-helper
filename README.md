@@ -44,6 +44,10 @@ def test_modules(plan):
   assert res['values']['location'] == plan.variables['gcs_location']
 ```
 
+## Compatibility
+
+Starting from version `1.0.0` Terraform `0.12` is required, and tests written with previous versions of this module are incompatible. Check the [`CHANGELOG.md`](CHANGELOG.md) file for details on what's changed.
+
 ## Testing
 
 Tests use the `pytest` framework, and only depende on that. The version used during development is in the `DEV-REQUIREMENTS.txt` file.
