@@ -1,0 +1,40 @@
+{
+  "version": 4,
+  "terraform_version": "0.12.10",
+  "serial": 116,
+  "lineage": "27d9cbe4-22db-3bb4-083c-819f1f440aa6",
+  "outputs": {
+    "foo": {
+      "value": "foo-value",
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "module": "module.vpc-remote",
+      "mode": "managed",
+      "type": "google_compute_network",
+      "name": "network",
+      "provider": "provider.google",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "auto_create_subnetworks": false,
+            "delete_default_routes_on_create": false,
+            "description": "",
+            "gateway_ipv4": "",
+            "id": "remote",
+            "ipv4_range": "",
+            "name": "remote",
+            "project": "tftest-dummy",
+            "routing_mode": "GLOBAL",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/tftest-dummy/global/networks/myvpc",
+            "timeouts": null
+          },
+          "private": "abcd"
+        }
+      ]
+    }
+  ]
+}

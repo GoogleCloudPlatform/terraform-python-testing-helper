@@ -45,6 +45,10 @@ TerraformStateResource = collections.namedtuple(
     'TerraformStateResource', 'key provider type attributes depends_on raw')
 
 
+class TerraformTestError(Exception):
+  pass
+
+
 def parse_args(init_vars=None, tf_vars=None, **kw):
   """Convert method arguments for use in Terraform commands.
 
@@ -88,24 +92,20 @@ def parse_args(init_vars=None, tf_vars=None, **kw):
   return cmd_args
 
 
-class TerraformTestError(Exception):
-  pass
-
-
 class TerraformJSONBase(object):
   "Base class for JSON wrappers."
 
   def __init__(self, raw):
-    self.raw = raw
+    self._raw = raw
 
   def __bytes__(self):
-    return bytes(self.raw)
+    return bytes(self._raw)
 
   def __len__(self):
-    return len(self.raw)
+    return len(self._raw)
 
   def __str__(self):
-    return str(self.raw)
+    return str(self._raw)
 
 
 class TerraformValueDict(TerraformJSONBase):
@@ -117,14 +117,14 @@ class TerraformValueDict(TerraformJSONBase):
     self.sensitive = tuple(k for k, v in raw.items() if v.get('sensitive'))
 
   def __getitem__(self, name):
-    return self.raw[name].get('value')
+    return self._raw[name].get('value')
 
 
-class TerraformPlanModule(object):
-  "Minimal wrapper for Terraform plan JSON output modules in planned values."
+class TerraformPlanModule(TerraformJSONBase):
+  "Minimal wrapper for parsed plan output modules."
 
   def __init__(self, raw):
-    self._raw = raw
+    super(TerraformPlanModule, self).__init__(raw)
     prefix = raw.get('address', '')
     self._strip = 0 if not prefix else len(prefix) + 1
     self._modules = self._resources = None
@@ -147,11 +147,11 @@ class TerraformPlanModule(object):
     return self._raw[name]
 
 
-class TerraformPlanOutput(object):
+class TerraformPlanOutput(TerraformJSONBase):
   "Minimal wrapper for Terraform plan JSON output."
 
   def __init__(self, raw):
-    self._raw = raw
+    super(TerraformPlanOutput, self).__init__(raw)
     self.root_module = TerraformPlanModule(
         raw['planned_values']['root_module'])
     self.outputs = TerraformValueDict(raw['planned_values']['outputs'])
@@ -171,34 +171,27 @@ class TerraformPlanOutput(object):
     return self._raw[name]
 
 
-class TerraformStateModule(object):
-  "Minimal wrapper for Terraform state modules."
-
-  def __init__(self, path, raw):
-    self._raw = raw
-    self.path = path
-    self.outputs = TerraformValueDict(raw['outputs'])
-    self.depends_on = raw['depends_on']
-    self.resources = {}
-    for k, v in raw['resources'].items():
-      self.resources[k] = TerraformStateResource(
-          k, v['provider'], v['type'],
-          v.get('primary', {}).get('attributes', {}), v['depends_on'], v)
-
-
 class TerraformState(TerraformJSONBase):
   "Minimal wrapper for Terraform state JSON format."
 
   def __init__(self, raw):
     super(TerraformState, self).__init__(raw)
-    self.modules = {}
-    for k, v in raw.items():
-      if k != 'modules':
-        setattr(self, k, v)
-        continue
-      for mod in v:
-        path = '.'.join(mod['path'])
-        self.modules[path] = TerraformStateModule(path, mod)
+    self.outputs = TerraformValueDict(raw['outputs'])
+    self._resources = None
+
+  @property
+  def resources(self):
+    if not self._resources:
+      resources = {}
+      for res in self._raw['resources']:
+        name = '%s.%s.%s' % (
+            res.get('module'), res.get('type'), res.get('name'))
+        resources[name] = res
+      self._resources = resources
+    return self._resources
+
+  def __getattr__(self, name):
+    return self._raw[name]
 
 
 class TerraformTest(object):
