@@ -119,6 +119,9 @@ class TerraformValueDict(TerraformJSONBase):
   def __getitem__(self, name):
     return self._raw[name].get('value')
 
+  def __contains__(self, name):
+    return name in self._raw
+
 
 class TerraformPlanModule(TerraformJSONBase):
   "Minimal wrapper for parsed plan output modules."
@@ -145,6 +148,9 @@ class TerraformPlanModule(TerraformJSONBase):
 
   def __getitem__(self, name):
     return self._raw[name]
+
+  def __contains__(self, name):
+    return name in self._raw
 
 
 class TerraformPlanOutput(TerraformJSONBase):
@@ -245,8 +251,7 @@ class TerraformTest(object):
     """Make relative path absolute from base dir."""
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
-  def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
-            tf_vars=None, backend=True):
+  def setup(self, extra_files=None, plugin_dir=None, init_vars=None, backend=True):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -254,11 +259,11 @@ class TerraformTest(object):
 
     Args:
       extra_files: list of absolute or relative to base paths to be linked in
-        the root module folder.
+        the root module folder
       plugin_dir: path to a plugin directory to be used for Terraform init, eg
-        built with terraform-bundle.
-      init_vars: Terraform backend configuration variables for init.
-      tf_vars: Terraform variables for plan and apply.
+        built with terraform-bundle
+      init_vars: Terraform backend configuration variables
+      backend: Terraform backend argument
 
     Returns:
       Terraform init output.
