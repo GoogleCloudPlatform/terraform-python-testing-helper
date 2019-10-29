@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - support child modules in plan output
+- added support for `__contains__` in dict wrapper classes
 
 ### Changed
 
