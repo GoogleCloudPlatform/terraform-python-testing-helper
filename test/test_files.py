@@ -12,29 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"Test the Terraform state wrapper class."
+"Test fixture file setup and removal."
 
-import pytest
+import os
+import tempfile
 import tftest
 
 
-@pytest.fixture
-def state(fixtures_dir):
-  import json
-  with open('%s/state.json' % fixtures_dir) as fp:
-    return tftest.TerraformState(json.load(fp))
-
-
-def test_attributes(state):
-  assert state.version == 4
-  assert state.terraform_version == '0.12.10'
-
-
-def test_outputs(state):
-  assert state.outputs['foo'] == 'foo-value'
-
-
-def test_resources(state):
-  res = state.resources['module.vpc-remote.google_compute_network.network']
-  assert res['mode'] == 'managed'
-  assert res['instances'][0]['attributes']['name'] == 'remote'
+def test_setup_files():
+  with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.NamedTemporaryFile() as tmpfile:
+      tf = tftest.TerraformTest(tmpdir)
+      tf.setup(extra_files=[tmpfile.name])
+      assert os.path.exists(os.path.join(
+          tmpdir, os.path.basename(tmpfile.name)))
+      tf = None
+      assert not os.path.exists(os.path.join(
+          tmpdir, os.path.basename(tmpfile.name)))
