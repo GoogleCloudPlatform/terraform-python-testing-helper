@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - support child modules in plan output
 - added support for `__contains__` in dict wrapper classes
+- add simple examples for plan and apply as fixtures
 
 ### Changed
 

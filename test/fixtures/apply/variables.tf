@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-gcs_location = "EU"
-names        = ["one", "two"]
-prefix       = "tftest"
-project_id   = "tftest-plan-project"
+variable "names" {
+  description = "List of names to use for resources."
+  type        = list(string)
+  default     = ["one", "two"]
+}

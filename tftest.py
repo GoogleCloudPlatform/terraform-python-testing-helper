@@ -215,8 +215,8 @@ class TerraformTest(object):
   from individual tests.
 
   The local .terraform directory (including local state) and any linked file
-  are removed when the instance is garbage collected. Destroy is only called
-  from the teardown() method.
+  are removed when the instance is garbage collected. Destroy needs to be
+  called explicitly using destroy().
 
   Args:
     tfdir: the Terraform module directory to test, either an absolute path, or

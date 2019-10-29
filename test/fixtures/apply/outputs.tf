@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-gcs_location = "EU"
-names        = ["one", "two"]
-prefix       = "tftest"
-project_id   = "tftest-plan-project"
+output "triggers" {
+  description = "Null resource trigger values."
+  value       = [for resource in null_resource.sample : resource.triggers]
+}

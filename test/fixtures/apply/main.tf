@@ -14,7 +14,18 @@
  * limitations under the License.
  */
 
-gcs_location = "EU"
-names        = ["one", "two"]
-prefix       = "tftest"
-project_id   = "tftest-plan-project"
+data "template_file" "sample" {
+  for_each = toset(var.names)
+  template = "sample template $${name}"
+  vars = {
+    name = each.key
+  }
+}
+
+resource "null_resource" "sample" {
+  for_each = toset(var.names)
+  triggers = {
+    name     = each.key
+    template = data.template_file.sample[each.key].rendered
+  }
+}
