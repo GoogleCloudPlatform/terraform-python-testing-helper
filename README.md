@@ -10,7 +10,7 @@ This module is heavily inspired by two projects: [Terragrunt](https://github.com
 
 ## Example Usage
 
-The `test` folder contains simple examples on how to write tests for both `plan` and `apply`, using either synthetic fixtures (simple representations of the plan output and output files), or minimal root modules. This is the test that uses plan output on an actual module:
+The [`test`](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/tree/master/test) folder contains simple examples on how to write tests for both `plan` and `apply`, using either synthetic fixtures (simple representations of the plan output and output files), or minimal root modules. This is the test that uses plan output on an actual module:
 
 ```hcl
 import pytest
@@ -46,11 +46,11 @@ def test_modules(plan):
 
 ## Compatibility
 
-Starting from version `1.0.0` Terraform `0.12` is required, and tests written with previous versions of this module are incompatible. Check the [`CHANGELOG.md`](CHANGELOG.md) file for details on what's changed.
+Starting from version `1.0.0` Terraform `0.12` is required, and tests written with previous versions of this module are incompatible. Check the [`CHANGELOG.md`](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/blob/master/CHANGELOG.md) file for details on what's changed.
 
 ## Testing
 
-Tests use the `pytest` framework, and only depende on that. The version used during development is in the `DEV-REQUIREMENTS.txt` file.
+Tests use the `pytest` framework and have no other dependency except on the Terraform binary. The version used during development is in the `DEV-REQUIREMENTS.txt` file.
 
 ## Disclaimer
 
