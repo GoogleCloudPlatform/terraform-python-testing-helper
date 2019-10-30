@@ -12,19 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-variable "foo_var" {
-  default = ["foo"]
-}
+import os
+import pytest
 
-resource "null_resource" "foo_resource" {
-  count = "${length(var.foo_var)}"
 
-  triggers {
-    index = "${count.index}"
-    foo   = "${element(var.foo_var, count.index)}"
-  }
-}
-
-output "foos" {
-  value = "${null_resource.foo_resource.*.triggers}"
-}
+@pytest.fixture(scope='session')
+def fixtures_dir():
+  return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')

@@ -1,0 +1,107 @@
+{
+  "format_version": "0.1",
+  "terraform_version": "0.12.6",
+  "variables": {
+    "foo": {
+      "value": "bar"
+    }
+  },
+  "planned_values": {
+    "outputs": {
+      "spam": {
+        "sensitive": false,
+        "value": "baz"
+      }
+    },
+    "root_module": {
+      "resources": [
+        {
+          "address": "spam.somespam",
+          "mode": "managed",
+          "type": "spam",
+          "name": "somespam",
+          "provider_name": "dummy",
+          "schema_version": 0,
+          "values": {
+            "spam-value": "spam"
+          }
+        }
+      ],
+      "child_modules": [
+        {
+          "address": "module.parent",
+          "resources": [
+            {
+              "address": "module.parent.foo.somefoo",
+              "type": "foo",
+              "name": "somefoo",
+              "provider_name": "dummy",
+              "values": {
+                "foo-value": "foo"
+              }
+            }
+          ],
+          "child_modules": [
+            {
+              "address": "module.parent.module.child",
+              "resources": [
+                {
+                  "address": "module.parent.module.child.eggs.someeggs",
+                  "type": "eggs",
+                  "name": "someeggs",
+                  "provider_name": "dummy",
+                  "values": {
+                    "eggs-value": "eggs"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "module.resource-change.foo_resource.somefoo",
+      "module_address": "module.resource-change",
+      "mode": "managed",
+      "type": "foo-resource",
+      "name": "somefoo",
+      "provider_name": "dummy",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "foo": "foo-value"
+        },
+        "after_unknown": {
+          "eggs": true
+        }
+      }
+    }
+  ],
+  "output_changes": {
+    "spam": {
+      "actions": [
+        "create"
+      ],
+      "before": null,
+      "after": "bar",
+      "after_unknown": false
+    }
+  },
+  "prior_state": {
+    "format_version": "0.1",
+    "terraform_version": "0.12.6"
+  },
+  "configuration": {
+    "provider_config": {
+      "google": {
+        "name": "google"
+      }
+    }
+  }
+}

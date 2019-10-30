@@ -33,7 +33,7 @@ import subprocess
 import tempfile
 import weakref
 
-__version__ = '0.6.2'
+__version__ = '1.0.0'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -43,6 +43,10 @@ TerraformCommandOutput = collections.namedtuple(
 
 TerraformStateResource = collections.namedtuple(
     'TerraformStateResource', 'key provider type attributes depends_on raw')
+
+
+class TerraformTestError(Exception):
+  pass
 
 
 def parse_args(init_vars=None, tf_vars=None, **kw):
@@ -88,28 +92,24 @@ def parse_args(init_vars=None, tf_vars=None, **kw):
   return cmd_args
 
 
-class TerraformTestError(Exception):
-  pass
-
-
 class TerraformJSONBase(object):
-  """Base class for JSON wrappers."""
+  "Base class for JSON wrappers."
 
   def __init__(self, raw):
-    self.raw = raw
+    self._raw = raw
 
   def __bytes__(self):
-    return bytes(self.raw)
+    return bytes(self._raw)
 
   def __len__(self):
-    return len(self.raw)
+    return len(self._raw)
 
   def __str__(self):
-    return str(self.raw)
+    return str(self._raw)
 
 
 class TerraformValueDict(TerraformJSONBase):
-  """Minimal wrapper to directly expose outputs or variables."""
+  "Minimal wrapper to directly expose outputs or variables."
 
   def __init__(self, raw):
     super(TerraformValueDict, self).__init__(raw)
@@ -117,68 +117,87 @@ class TerraformValueDict(TerraformJSONBase):
     self.sensitive = tuple(k for k, v in raw.items() if v.get('sensitive'))
 
   def __getitem__(self, name):
-    return self.raw[name].get('value')
+    return self._raw[name].get('value')
+
+  def __contains__(self, name):
+    return name in self._raw
 
 
-class TerraformPlanOutput(object):
-  """Minimal wrapper for Terraform plan JSON output."""
+class TerraformPlanModule(TerraformJSONBase):
+  "Minimal wrapper for parsed plan output modules."
 
   def __init__(self, raw):
-    self._raw = raw
-    self.variables = TerraformValueDict(raw['variables'])
-    self.outputs = TerraformValueDict(raw['planned_values']['outputs'])
+    super(TerraformPlanModule, self).__init__(raw)
+    prefix = raw.get('address', '')
+    self._strip = 0 if not prefix else len(prefix) + 1
     self._modules = self._resources = None
 
   @property
-  def modules(self):
+  def child_modules(self):
     if self._modules is None:
-      modules = {}
-      for mod in self._raw['planned_values']['root_module']['child_modules']:
-        modules[mod['address']] = dict(
-            (r['address'], r) for r in mod['resources']
-        )
-      self._modules = modules
+      self._modules = dict((mod['address'][self._strip:], TerraformPlanModule(
+          mod)) for mod in self._raw.get('child_modules'))
     return self._modules
 
   @property
-  def resource_changes(self):
+  def resources(self):
     if self._resources is None:
-      self._resources = dict((v['address'], v)
-                             for v in self._raw['resource_changes'])
+      self._resources = dict((res['address'][self._strip:], res)
+                             for res in self._raw.get('resources', []))
     return self._resources
+
+  def __getitem__(self, name):
+    return self._raw[name]
+
+  def __contains__(self, name):
+    return name in self._raw
+
+
+class TerraformPlanOutput(TerraformJSONBase):
+  "Minimal wrapper for Terraform plan JSON output."
+
+  def __init__(self, raw):
+    super(TerraformPlanOutput, self).__init__(raw)
+    self.root_module = TerraformPlanModule(
+        raw['planned_values']['root_module'])
+    self.outputs = TerraformValueDict(raw['planned_values']['outputs'])
+    self.resource_changes = dict((v['address'], v)
+                                 for v in self._raw['resource_changes'])
+    self.variables = TerraformValueDict(raw['variables'])
+
+  @property
+  def resources(self):
+    return self.root_module.resources
+
+  @property
+  def modules(self):
+    return self.root_module.child_modules
 
   def __getattr__(self, name):
     return self._raw[name]
 
 
-class TerraformStateModule(object):
-  """Minimal wrapper for Terraform state modules."""
-
-  def __init__(self, path, raw):
-    self._raw = raw
-    self.path = path
-    self.outputs = TerraformValueDict(raw['outputs'])
-    self.depends_on = raw['depends_on']
-    self.resources = {}
-    for k, v in raw['resources'].items():
-      self.resources[k] = TerraformStateResource(
-          k, v['provider'], v['type'],
-          v.get('primary', {}).get('attributes', {}), v['depends_on'], v)
-
-
 class TerraformState(TerraformJSONBase):
-  """Minimal wrapper for Terraform state JSON format."""
+  "Minimal wrapper for Terraform state JSON format."
 
   def __init__(self, raw):
     super(TerraformState, self).__init__(raw)
-    self.modules = {}
-    for k, v in raw.items():
-      if k != 'modules':
-        setattr(self, k, v)
-        continue
-      for mod in v:
-        path = '.'.join(mod['path'])
-        self.modules[path] = TerraformStateModule(path, mod)
+    self.outputs = TerraformValueDict(raw['outputs'])
+    self._resources = None
+
+  @property
+  def resources(self):
+    if not self._resources:
+      resources = {}
+      for res in self._raw['resources']:
+        name = '%s.%s.%s' % (
+            res.get('module'), res.get('type'), res.get('name'))
+        resources[name] = res
+      self._resources = resources
+    return self._resources
+
+  def __getattr__(self, name):
+    return self._raw[name]
 
 
 class TerraformTest(object):
@@ -196,8 +215,8 @@ class TerraformTest(object):
   from individual tests.
 
   The local .terraform directory (including local state) and any linked file
-  are removed when the instance is garbage collected. Destroy is only called
-  from the teardown() method, or on error when using setup with autorun.
+  are removed when the instance is garbage collected. Destroy needs to be
+  called explicitly using destroy().
 
   Args:
     tfdir: the Terraform module directory to test, either an absolute path, or
@@ -212,7 +231,6 @@ class TerraformTest(object):
     self._basedir = basedir or os.getcwd()
     self.terraform = terraform
     self.tfdir = self._abspath(tfdir)
-    self.setup_output = None
 
   @classmethod
   def _cleanup(cls, tfdir, filenames):
@@ -233,27 +251,22 @@ class TerraformTest(object):
     """Make relative path absolute from base dir."""
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
-  def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
-            tf_vars=None, backend=True, command=None, destroy=False):
+  def setup(self, extra_files=None, plugin_dir=None, init_vars=None, backend=True):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
-    specified at init time, and optionally performs the standard sequence of
-    Terraform commands so that outputs and state can be accessed from tests.
+    specified at init time, and returns init output.
 
     Args:
       extra_files: list of absolute or relative to base paths to be linked in
-        the root module folder.
+        the root module folder
       plugin_dir: path to a plugin directory to be used for Terraform init, eg
-        built with terraform-bundle.
-      init_vars: Terraform backend configuration variables for init.
-      tf_vars: Terraform variables for plan and apply.
-      command: run Terraform commands in order up to command, default to not
-        running any Terraform commands.
-      destroy: run destroy in case of errors during apply.
+        built with terraform-bundle
+      init_vars: Terraform backend configuration variables
+      backend: Terraform backend argument
 
     Returns:
-      Wrapped output if apply is run from here.
+      Terraform init output.
     """
     # link extra files inside dir
     filenames = []
@@ -273,50 +286,7 @@ class TerraformTest(object):
         _LOGGER.warning('no such file {}'.format(link_src))
     self._finalizer = weakref.finalize(
         self, self._cleanup, self.tfdir, filenames)
-    self.init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend)
-    if not command:
-      return
-    self.setup_output = self.run_commands(
-        tf_vars=tf_vars, plan=(command == 'plan'),
-        output=(command == 'output'), destroy=destroy)
-    return self.setup_output
-
-  def run_commands(self, tf_vars=None, plan=False, output=True, destroy=True):
-    """Convenience method to run a common set of commands in order.
-
-    This method is used to simpify running the usual suite of plan/apply/output
-    in order, and optionally trap errors during apply so destroy is called to
-    clean up any leftover resources.
-
-    Args:
-      tf_vars: the Terraform variables to use for plan/apply/destroy
-      plan: run plan only
-      output: run output after apply
-      destroy: run destroy if apply raises an error
-
-    Returns:
-      Wrapped output if output is run from here.
-    """
-    if plan:
-      return self.plan(tf_vars=tf_vars)
-    # catch errors so we can run destroy before re-raising
-    try:
-      result = self.apply(tf_vars=tf_vars)
-    except TerraformTestError:
-      if destroy:
-        _LOGGER.warning('running teardown to clean up')
-        self.teardown(tf_vars)
-      raise
-    if not output:
-      return result
-    return self.output()
-
-  def teardown(self, tf_vars=None):
-    """Teardown method that runs destroy without raising errors."""
-    try:
-      self.destroy(tf_vars=tf_vars)
-    except TerraformTestError:
-      _LOGGER.exception('error in teardown destroy')
+    return self.init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend)
 
   def init(self, input=False, color=False, force_copy=False, plugin_dir=None,
            init_vars=None, backend=True):
@@ -326,25 +296,20 @@ class TerraformTest(object):
                           init_vars=init_vars)
     return self.execute_command('init', *cmd_args).out
 
-  def plan(self, input=False, color=False, refresh=True, tf_vars=None):
-    """Run Terraform plan command."""
+  def plan(self, input=False, color=False, refresh=True, tf_vars=None, output=False):
+    "Run Terraform plan command, optionally returning parsed plan output."
     cmd_args = parse_args(input=input, color=color,
                           refresh=refresh, tf_vars=tf_vars)
-    return self.execute_command('plan', *cmd_args).out
-
-  def plan_out(self, input=False, color=False, refresh=True, tf_vars=None, parsed=True):
-    """Run Terraform plan command and return saved output as JSON."""
-    cmd_args = parse_args(input=input, color=color,
-                          refresh=refresh, tf_vars=tf_vars)
+    if not output:
+      return self.execute_command('plan', *cmd_args).out
     with tempfile.NamedTemporaryFile() as fp:
       cmd_args.append('-out={}'.format(fp.name))
       self.execute_command('plan', *cmd_args)
       result = self.execute_command('show', '-no-color', '-json', fp.name)
     try:
-      plan_out = json.loads(result.out)
+      return TerraformPlanOutput(json.loads(result.out))
     except json.JSONDecodeError as e:
-      _LOGGER.warning('error decoding plan output: {}'.format(e))
-    return plan_out if not parsed else TerraformPlanOutput(plan_out)
+      raise TerraformTestError('Error decoding plan output: {}'.format(e))
 
   def apply(self, input=False, color=False, auto_approve=True, tf_vars=None):
     """Run Terraform apply command."""
