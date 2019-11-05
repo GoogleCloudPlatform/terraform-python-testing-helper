@@ -33,7 +33,7 @@ import subprocess
 import tempfile
 import weakref
 
-__version__ = '1.0.1'
+__version__ = '1.1.0'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -115,6 +115,9 @@ class TerraformValueDict(TerraformJSONBase):
     super(TerraformValueDict, self).__init__(raw)
     # only matters for outputs
     self.sensitive = tuple(k for k, v in raw.items() if v.get('sensitive'))
+
+  def __getattr__(self, name):
+    return getattr(self._raw, name)
 
   def __getitem__(self, name):
     return self._raw[name].get('value')
