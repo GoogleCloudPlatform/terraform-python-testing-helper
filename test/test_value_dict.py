@@ -32,3 +32,7 @@ def test_getitem(wrapper):
 
 def test_getitem_dict_attrs(wrapper):
   assert wrapper.keys() == _RAW.keys()
+
+
+def test_iter(wrapper):
+  assert [k for k in wrapper] == [k for k in _RAW]

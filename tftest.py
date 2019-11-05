@@ -33,7 +33,7 @@ import subprocess
 import tempfile
 import weakref
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -124,6 +124,9 @@ class TerraformValueDict(TerraformJSONBase):
 
   def __contains__(self, name):
     return name in self._raw
+
+  def __iter__(self):
+    return iter(self._raw)
 
 
 class TerraformPlanModule(TerraformJSONBase):
