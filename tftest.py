@@ -33,7 +33,7 @@ import subprocess
 import tempfile
 import weakref
 
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -239,25 +239,28 @@ class TerraformTest(object):
     self.tfdir = self._abspath(tfdir)
 
   @classmethod
-  def _cleanup(cls, tfdir, filenames):
+  def _cleanup(cls, tfdir, filenames, deep=True):
     """Remove linked files and .terraform folder at instance deletion."""
     _LOGGER.debug('cleaning up %s %s', tfdir, filenames)
+    for filename in filenames:
+      path = os.path.join(tfdir, filename)
+      if os.path.islink(path):
+        os.unlink(path)
+    if not deep:
+      return
     path = os.path.join(tfdir, '.terraform')
     if os.path.isdir(path):
       shutil.rmtree(path)
     path = os.path.join(tfdir, 'terraform.tfstate')
     if os.path.isfile(path):
       os.unlink(path)
-    for filename in filenames:
-      path = os.path.join(tfdir, filename)
-      if os.path.islink(path):
-        os.unlink(path)
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
-  def setup(self, extra_files=None, plugin_dir=None, init_vars=None, backend=True):
+  def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
+            backend=True, cleanup_on_exit=True):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -270,6 +273,7 @@ class TerraformTest(object):
         built with terraform-bundle
       init_vars: Terraform backend configuration variables
       backend: Terraform backend argument
+      cleanup_on_exit: remove .terraform and terraform.tfstate files on exit
 
     Returns:
       Terraform init output.
@@ -291,7 +295,7 @@ class TerraformTest(object):
       else:
         _LOGGER.warning('no such file {}'.format(link_src))
     self._finalizer = weakref.finalize(
-        self, self._cleanup, self.tfdir, filenames)
+        self, self._cleanup, self.tfdir, filenames, deep=cleanup_on_exit)
     return self.init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend)
 
   def init(self, input=False, color=False, force_copy=False, plugin_dir=None,
