@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+# [1.3.0]
+
+## Added
+
+- add an option to allow leaving `.terraform` and `terraform.state` in place on exit
+
 # [1.2.0]
 
 ## Added
@@ -47,7 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - remove the `teardown` method
   - unify the `plan` and `plan_out` methods
 
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.0.0...v1.0.1
