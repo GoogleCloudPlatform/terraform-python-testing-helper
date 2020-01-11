@@ -164,9 +164,10 @@ class TerraformPlanOutput(TerraformJSONBase):
 
   def __init__(self, raw):
     super(TerraformPlanOutput, self).__init__(raw)
+    planned_values = raw.get('planned_values', {})
     self.root_module = TerraformPlanModule(
-        raw['planned_values']['root_module'])
-    self.outputs = TerraformValueDict(raw['planned_values']['outputs'])
+        planned_values.get('root_module', {}))
+    self.outputs = TerraformValueDict(planned_values.get('outputs', {}))
     self.resource_changes = dict((v['address'], v)
                                  for v in self._raw['resource_changes'])
     self.variables = TerraformValueDict(raw['variables'])
@@ -188,7 +189,7 @@ class TerraformState(TerraformJSONBase):
 
   def __init__(self, raw):
     super(TerraformState, self).__init__(raw)
-    self.outputs = TerraformValueDict(raw['outputs'])
+    self.outputs = TerraformValueDict(raw.get('outputs', {}))
     self._resources = None
 
   @property
