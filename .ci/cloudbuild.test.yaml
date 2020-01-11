@@ -35,7 +35,7 @@ steps:
       - PATH=/usr/local/bin:/usr/bin:/bin:/builder/home/.local/bin
 
 substitutions:
-  _TERRAFORM_VERSION: 0.12.12
+  _TERRAFORM_VERSION: 0.12.19
 
 tags:
   - "ci"
