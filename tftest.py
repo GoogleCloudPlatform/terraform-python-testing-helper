@@ -49,7 +49,7 @@ class TerraformTestError(Exception):
   pass
 
 
-def parse_args(init_vars=None, tf_vars=None, **kw):
+def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   """Convert method arguments for use in Terraform commands.
 
   Args:
@@ -89,6 +89,8 @@ def parse_args(init_vars=None, tf_vars=None, **kw):
     cmd_args += list(itertools.chain.from_iterable(
         ("-var", "{}={}".format(k, v)) for k, v in tf_vars.items()
     ))
+  if targets:
+    cmd_args += [("-target={}".format(t)) for t in targets]
   return cmd_args
 
 
@@ -307,10 +309,11 @@ class TerraformTest(object):
                           init_vars=init_vars)
     return self.execute_command('init', *cmd_args).out
 
-  def plan(self, input=False, color=False, refresh=True, tf_vars=None, output=False):
+  def plan(self, input=False, color=False, refresh=True, tf_vars=None, targets=None, output=False):
     "Run Terraform plan command, optionally returning parsed plan output."
     cmd_args = parse_args(input=input, color=color,
-                          refresh=refresh, tf_vars=tf_vars)
+                          refresh=refresh, tf_vars=tf_vars,
+                          targets=targets)
     if not output:
       return self.execute_command('plan', *cmd_args).out
     with tempfile.NamedTemporaryFile() as fp:
@@ -322,10 +325,11 @@ class TerraformTest(object):
     except json.JSONDecodeError as e:
       raise TerraformTestError('Error decoding plan output: {}'.format(e))
 
-  def apply(self, input=False, color=False, auto_approve=True, tf_vars=None):
+  def apply(self, input=False, color=False, auto_approve=True, tf_vars=None, targets=None):
     """Run Terraform apply command."""
     cmd_args = parse_args(input=input, color=color,
-                          auto_approve=auto_approve, tf_vars=tf_vars)
+                          auto_approve=auto_approve, tf_vars=tf_vars,
+                          targets=targets)
     return self.execute_command('apply', *cmd_args).out
 
   def output(self, name=None, color=False, json_format=True):
@@ -343,16 +347,16 @@ class TerraformTest(object):
         _LOGGER.warning('error decoding output: {}'.format(e))
     return output
 
-  def destroy(self, color=False, auto_approve=True, tf_vars=None):
+  def destroy(self, color=False, auto_approve=True, tf_vars=None, targets=None):
     """Run Terraform destroy command."""
-    cmd_args = parse_args(
-        color=color, auto_approve=auto_approve, tf_vars=tf_vars)
+    cmd_args = parse_args(color=color, auto_approve=auto_approve,
+                          tf_vars=tf_vars, targets=targets)
     return self.execute_command('destroy', *cmd_args).out
 
-  def refresh(self, color=False, lock=False, tf_vars=None):
+  def refresh(self, color=False, lock=False, tf_vars=None, targets=None):
     """Run Terraform refresh command."""
-    cmd_args = parse_args(
-        color=color, lock=lock, tf_vars=tf_vars)
+    cmd_args = parse_args(color=color, lock=lock,
+                          tf_vars=tf_vars, targets=targets)
     return self.execute_command('refresh', *cmd_args).out
 
   def state_pull(self):

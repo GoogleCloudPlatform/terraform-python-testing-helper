@@ -54,3 +54,7 @@ def test_var_args():
       ["-backend-config='a=1'", '-backend-config=\'b=["2"]\''])
   assert sorted(tftest.parse_args(tf_vars={'a': 1, 'b': '["2"]'})) == sorted(
       ['-var', 'b=["2"]', '-var', 'a=1'])
+
+def test_targets():
+  assert tftest.parse_args(targets=['one','two']) == sorted(
+      ['-target=one','-target=two'])
