@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0]
+
+- add an option to allow the use of targeted resources using the `-target` flag
+
 ## [1.4.1]
 
 ### Fixed
