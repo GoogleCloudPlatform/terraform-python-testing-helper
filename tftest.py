@@ -91,6 +91,8 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     ))
   if targets:
     cmd_args += [("-target={}".format(t)) for t in targets]
+  if kw.get('tf_var_file'):
+    cmd_args.append('-var-file={}'.format(kw['tf_var_file']))
   return cmd_args
 
 
@@ -309,11 +311,11 @@ class TerraformTest(object):
                           init_vars=init_vars)
     return self.execute_command('init', *cmd_args).out
 
-  def plan(self, input=False, color=False, refresh=True, tf_vars=None, targets=None, output=False):
+  def plan(self, input=False, color=False, refresh=True, tf_vars=None, targets=None, output=False, tf_var_file=None):
     "Run Terraform plan command, optionally returning parsed plan output."
     cmd_args = parse_args(input=input, color=color,
                           refresh=refresh, tf_vars=tf_vars,
-                          targets=targets)
+                          targets=targets,  tf_var_file=tf_var_file)
     if not output:
       return self.execute_command('plan', *cmd_args).out
     with tempfile.NamedTemporaryFile() as fp:
@@ -325,11 +327,11 @@ class TerraformTest(object):
     except json.JSONDecodeError as e:
       raise TerraformTestError('Error decoding plan output: {}'.format(e))
 
-  def apply(self, input=False, color=False, auto_approve=True, tf_vars=None, targets=None):
+  def apply(self, input=False, color=False, auto_approve=True, tf_vars=None, targets=None, tf_var_file=None):
     """Run Terraform apply command."""
     cmd_args = parse_args(input=input, color=color,
                           auto_approve=auto_approve, tf_vars=tf_vars,
-                          targets=targets)
+                          targets=targets, tf_var_file=tf_var_file)
     return self.execute_command('apply', *cmd_args).out
 
   def output(self, name=None, color=False, json_format=True):
@@ -347,10 +349,11 @@ class TerraformTest(object):
         _LOGGER.warning('error decoding output: {}'.format(e))
     return output
 
-  def destroy(self, color=False, auto_approve=True, tf_vars=None, targets=None):
+  def destroy(self, color=False, auto_approve=True, tf_vars=None, targets=None, tf_var_file=None):
     """Run Terraform destroy command."""
     cmd_args = parse_args(color=color, auto_approve=auto_approve,
-                          tf_vars=tf_vars, targets=targets)
+                          tf_vars=tf_vars, targets=targets,
+                          tf_var_file=tf_var_file)
     return self.execute_command('destroy', *cmd_args).out
 
   def refresh(self, color=False, lock=False, tf_vars=None, targets=None):

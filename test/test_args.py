@@ -40,6 +40,8 @@ ARGS_TESTS = (
     ({'refresh': True}, []),
     ({'refresh': None}, []),
     ({'refresh': False}, ['-refresh=false']),
+    ({'tf_var_file': None}, []),
+    ({'tf_var_file': 'foo.tfvar'}, ['-var-file=foo.tfvar']),
 )
 
 
@@ -55,6 +57,7 @@ def test_var_args():
   assert sorted(tftest.parse_args(tf_vars={'a': 1, 'b': '["2"]'})) == sorted(
       ['-var', 'b=["2"]', '-var', 'a=1'])
 
+
 def test_targets():
-  assert tftest.parse_args(targets=['one','two']) == sorted(
-      ['-target=one','-target=two'])
+  assert tftest.parse_args(targets=['one', 'two']) == sorted(
+      ['-target=one', '-target=two'])
