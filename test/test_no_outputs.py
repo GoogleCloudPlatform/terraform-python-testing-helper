@@ -41,5 +41,5 @@ def test_root_resource(plan):
 
 def test_modules(plan):
   mod = plan.modules['module.gcs-buckets']
-  res = mod.resources['google_storage_bucket.buckets[0]']
+  res = mod.resources['google_storage_bucket.buckets["one"]']
   assert res['values']['location'] == plan.variables['gcs_location']

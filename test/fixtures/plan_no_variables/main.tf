@@ -16,8 +16,7 @@
 
 
 module "service-accounts" {
-  source     = "terraform-google-modules/service-accounts/google"
-  version    = "2.0.0"
+  source     = "github.com/terraform-google-modules/cloud-foundation-fabric//modules/iam-service-accounts?ref=v3.2.0"
   project_id = "my-project-id"
   prefix     = "test"
   names      = ["one"]
