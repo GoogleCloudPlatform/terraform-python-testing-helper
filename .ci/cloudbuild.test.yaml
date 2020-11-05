@@ -19,6 +19,7 @@ steps:
     args:
       - -c
       - |
+        apt install -y git &&
         python -m pip install --user --no-warn-script-location -r DEV-REQUIREMENTS.txt &&
         wget https://releases.hashicorp.com/terraform/${_TERRAFORM_VERSION}/terraform_${_TERRAFORM_VERSION}_linux_amd64.zip &&
         unzip terraform_${_TERRAFORM_VERSION}_linux_amd64.zip -d /builder/home/.local/bin &&
