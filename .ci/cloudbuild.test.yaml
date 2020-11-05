@@ -29,7 +29,7 @@ steps:
     id: test
     entrypoint: sh
     args:
-      - c
+      - -c
       - |
         apk update &&
         apk install git &&
