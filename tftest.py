@@ -174,7 +174,8 @@ class TerraformPlanOutput(TerraformJSONBase):
     self.outputs = TerraformValueDict(planned_values.get('outputs', {}))
     self.resource_changes = dict((v['address'], v)
                                  for v in self._raw['resource_changes'])
-    self.variables = TerraformValueDict(raw['variables'])
+    # there might be no variables defined
+    self.variables = TerraformValueDict(raw.get('variables', {}))
 
   @property
   def resources(self):
