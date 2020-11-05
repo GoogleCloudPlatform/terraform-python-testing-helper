@@ -27,11 +27,11 @@ def plan(fixtures_dir):
 
 def test_variables(plan):
   assert 'prefix' in plan.variables
-  assert plan.variables['names'] == ['one', 'two']
+  assert plan.variables['name'] == 'test'
 
 
 def test_outputs(plan):
-  assert 'gcs_buckets' in plan.outputs
+  assert 'service_account' in plan.outputs
 
 
 def test_root_resource(plan):
@@ -40,6 +40,6 @@ def test_root_resource(plan):
 
 
 def test_modules(plan):
-  mod = plan.modules['module.gcs-buckets']
-  res = mod.resources['google_storage_bucket.buckets["one"]']
-  assert res['values']['location'] == plan.variables['gcs_location']
+  mod = plan.modules['module.service-account']
+  assert set(mod.resources.keys()) == set(
+      ['google_service_account.service_account'])

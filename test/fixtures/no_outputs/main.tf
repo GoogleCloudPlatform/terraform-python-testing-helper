@@ -15,23 +15,15 @@
  */
 
 
-module "service-accounts" {
-  source     = "github.com/terraform-google-modules/cloud-foundation-fabric//modules/iam-service-accounts?ref=v3.2.0"
+module "service-account" {
+  source     = "../_modules/iam-service-account"
   project_id = var.project_id
   prefix     = var.prefix
-  names      = var.names
-}
-
-module "gcs-buckets" {
-  source     = "github.com/terraform-google-modules/cloud-foundation-fabric//modules/gcs?ref=v3.2.0"
-  project_id = var.project_id
-  prefix     = var.prefix
-  names      = var.names
-  location   = var.gcs_location
+  name       = var.name
 }
 
 resource "google_project_iam_member" "test_root_resource" {
   project = var.project_id
   role    = "roles/viewer"
-  member  = module.service-accounts.iam_email
+  member  = module.service-account.iam_email
 }

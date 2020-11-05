@@ -15,9 +15,9 @@
  */
 
 
-module "service-accounts" {
-  source     = "github.com/terraform-google-modules/cloud-foundation-fabric//modules/iam-service-accounts?ref=v3.2.0"
+module "service-account" {
+  source     = "../_modules/iam-service-account"
   project_id = "my-project-id"
   prefix     = "test"
-  names      = ["one"]
+  name       = "test"
 }

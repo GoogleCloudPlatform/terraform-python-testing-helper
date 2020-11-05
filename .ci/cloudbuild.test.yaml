@@ -27,13 +27,10 @@ steps:
   # TODO(ludoo): split into two triggers with different filters
   - name: python:3.6-alpine
     id: test
-    entrypoint: sh
+    entrypoint: pytest
     args:
-      - -c
-      - |
-        apk update &&
-        apk install git &&
-        pytest -v test
+      - -v
+      - test
     env:
       - PATH=/usr/local/bin:/usr/bin:/bin:/builder/home/.local/bin
 

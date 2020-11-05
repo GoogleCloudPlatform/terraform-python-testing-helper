@@ -15,14 +15,9 @@
  */
 
 
-variable "gcs_location" {
-  description = "GCS bucket location."
+variable "name" {
+  description = "Resource name."
   type        = string
-}
-
-variable "names" {
-  description = "Resource names."
-  type        = list(string)
 }
 
 variable "prefix" {
