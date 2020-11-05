@@ -19,8 +19,6 @@ steps:
     args:
       - -c
       - |
-        apk update &&
-        apk add git &&
         python -m pip install --user --no-warn-script-location -r DEV-REQUIREMENTS.txt &&
         wget https://releases.hashicorp.com/terraform/${_TERRAFORM_VERSION}/terraform_${_TERRAFORM_VERSION}_linux_amd64.zip &&
         unzip terraform_${_TERRAFORM_VERSION}_linux_amd64.zip -d /builder/home/.local/bin &&
@@ -29,10 +27,13 @@ steps:
   # TODO(ludoo): split into two triggers with different filters
   - name: python:3.6-alpine
     id: test
-    entrypoint: pytest
+    entrypoint: sh
     args:
-      - -v
-      - test
+      - c
+      - |
+        apk update &&
+        apk install git &&
+        pytest -v test
     env:
       - PATH=/usr/local/bin:/usr/bin:/bin:/builder/home/.local/bin
 
