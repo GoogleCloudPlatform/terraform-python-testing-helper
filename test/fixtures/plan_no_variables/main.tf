@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-output "service_account" {
-  description = "Service account email."
-  value       = module.service-account.email
+
+module "service-account" {
+  source     = "../_modules/iam-service-account"
+  project_id = "my-project-id"
+  prefix     = "test"
+  name       = "test"
 }

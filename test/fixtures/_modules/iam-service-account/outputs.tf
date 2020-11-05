@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Google LLC
+ * Copyright 2020 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,22 @@
  */
 
 output "service_account" {
+  description = "Service account resource."
+  value       = google_service_account.service_account
+}
+
+output "email" {
   description = "Service account email."
-  value       = module.service-account.email
+  value       = google_service_account.service_account.email
+}
+
+output "iam_email" {
+  description = "IAM-format service account email."
+  value       = local.resource_iam_email
+}
+
+output "key" {
+  description = "Service account key."
+  sensitive   = true
+  value       = local.key
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-output "service_account" {
-  description = "Service account email."
-  value       = module.service-account.email
+output "service_accounts" {
+  description = "Service account emails."
+  value       = module.service-account
 }

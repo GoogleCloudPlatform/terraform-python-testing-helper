@@ -15,30 +15,15 @@
  */
 
 
-module "service-accounts" {
-  source     = "terraform-google-modules/service-accounts/google"
-  version    = "2.0.0"
+module "service-account" {
+  source     = "../_modules/iam-service-account"
   project_id = var.project_id
   prefix     = var.prefix
-  names      = var.names
-}
-
-module "gcs-buckets" {
-  source          = "terraform-google-modules/cloud-storage/google"
-  version         = "1.0.0"
-  project_id      = var.project_id
-  prefix          = var.prefix
-  names           = var.names
-  location        = var.gcs_location
-  set_admin_roles = true
-  bucket_admins = zipmap(
-    var.names,
-    module.service-accounts.iam_emails_list
-  )
+  name       = var.name
 }
 
 resource "google_project_iam_member" "test_root_resource" {
   project = var.project_id
   role    = "roles/viewer"
-  member  = module.service-accounts.iam_email
+  member  = module.service-account.iam_email
 }

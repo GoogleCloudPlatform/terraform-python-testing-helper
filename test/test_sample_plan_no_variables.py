@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"Test plan withno outputs."
+"Test init and plan using an actual example."
 
 import pytest
 import tftest
@@ -20,26 +20,14 @@ import tftest
 
 @pytest.fixture
 def plan(fixtures_dir):
-  tf = tftest.TerraformTest('no_outputs', fixtures_dir)
-  tf.setup(extra_files=['plan.auto.tfvars'])
+  tf = tftest.TerraformTest('plan_no_variables', fixtures_dir)
+  tf.setup()
   return tf.plan(output=True)
 
 
 def test_variables(plan):
-  assert 'prefix' in plan.variables
-  assert plan.variables['name'] == 'test'
+  assert not plan.variables
 
 
 def test_outputs(plan):
-  assert plan.outputs._raw == {}
-
-
-def test_root_resource(plan):
-  res = plan.resources['google_project_iam_member.test_root_resource']
-  assert res['values']['project'] == plan.variables['project_id']
-
-
-def test_modules(plan):
-  mod = plan.modules['module.service-account']
-  assert set(mod.resources.keys()) == set(
-      ['google_service_account.service_account'])
+  assert 'service_accounts' in plan.outputs

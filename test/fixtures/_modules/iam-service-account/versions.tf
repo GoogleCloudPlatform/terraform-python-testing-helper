@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Google LLC
+ * Copyright 2020 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-output "service_account" {
-  description = "Service account email."
-  value       = module.service-account.email
+terraform {
+  required_version = ">= 0.12.6"
 }

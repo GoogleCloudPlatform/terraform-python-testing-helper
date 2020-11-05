@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-gcs_location = "EU"
-names        = ["one", "two"]
-prefix       = "tftest"
-project_id   = "tftest-plan-project"
+name       = "test"
+prefix     = "tftest"
+project_id = "tftest-plan-project"

@@ -174,7 +174,8 @@ class TerraformPlanOutput(TerraformJSONBase):
     self.outputs = TerraformValueDict(planned_values.get('outputs', {}))
     self.resource_changes = dict((v['address'], v)
                                  for v in self._raw['resource_changes'])
-    self.variables = TerraformValueDict(raw['variables'])
+    # there might be no variables defined
+    self.variables = TerraformValueDict(raw.get('variables', {}))
 
   @property
   def resources(self):
@@ -217,7 +218,7 @@ class TerraformTest(object):
   This helper class can be used to set up fixtures in Terraform tests, so that
   the usual Terraform commands (init, plan, apply, output, destroy) can be run
   on a module. Configuration is done at instantiation first, by passing in the
-  Terraform root module path, and the in the setup method through files that
+  Terraform root module path, and then in the setup method through files that
   will be temporarily linked in the module, and Terraform variables.
 
   The standard way of using this is by calling setup to configure the module
