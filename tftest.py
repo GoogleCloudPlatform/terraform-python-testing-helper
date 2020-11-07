@@ -236,13 +236,17 @@ class TerraformTest(object):
     basedir: optional base directory to use for relative paths, defaults to the
       directory above the one this module lives in.
     terraform: path to the Terraform command.
+    env: a dict with custom environment variables to pass to terraform.
   """
 
-  def __init__(self, tfdir, basedir=None, terraform='terraform'):
+  def __init__(self, tfdir, basedir=None, terraform='terraform', env=None):
     """Set Terraform folder to operate on, and optional base directory."""
     self._basedir = basedir or os.getcwd()
     self.terraform = terraform
     self.tfdir = self._abspath(tfdir)
+    self.env = os.environ.copy()
+    if env is not None:
+      self.env.update(env)
 
   @classmethod
   def _cleanup(cls, tfdir, filenames, deep=True):
@@ -379,7 +383,7 @@ class TerraformTest(object):
     cmdline += cmd_args
     try:
       p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE, cwd=self.tfdir, env=os.environ.copy())
+                           stderr=subprocess.PIPE, cwd=self.tfdir, env=self.env)
     except FileNotFoundError as e:
       raise TerraformTestError('Terraform executable not found: %s' % e)
     out, err = p.communicate()
