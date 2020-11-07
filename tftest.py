@@ -248,7 +248,6 @@ class TerraformTest(object):
     if env is not None:
       self.env.update(env)
 
-
   @classmethod
   def _cleanup(cls, tfdir, filenames, deep=True):
     """Remove linked files and .terraform folder at instance deletion."""
