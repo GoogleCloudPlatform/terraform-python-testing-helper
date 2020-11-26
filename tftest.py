@@ -33,7 +33,7 @@ import subprocess
 import tempfile
 import weakref
 
-__version__ = '1.5.3'
+__version__ = '1.5.4'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -81,7 +81,7 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   if kw.get('refresh') is False:
     cmd_args.append('-refresh=false')
   if isinstance(init_vars, dict):
-    cmd_args += ['-backend-config=\'{}={}\''.format(k, v)
+    cmd_args += ['-backend-config={}={}'.format(k, v)
                  for k, v in init_vars.items()]
   elif isinstance(init_vars, str):
     cmd_args += ['-backend-config', '{}'.format(init_vars)]
