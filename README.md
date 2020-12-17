@@ -2,15 +2,17 @@
 
 This simple helper facilitates testing Terraform modules from Python unit tests, by wrapping the Terraform executable and exposing convenience methods to set up fixtures, execute Terraform commands, and parse their output.
 
-It allows for different types of tests: lightweight tests that only use Terraform `init` and `plan` to ensure code is syntactically correct and the right number and type of resources should be created, or full-fledged tests that run the full `apply`/`output`/`destroy` cycle, and can be then be used to test the actual created resources, or the state file.
+It allows for different types of tests: lightweight tests that only use Terraform `init` and `plan` to ensure code is syntactically correct and the right number and type of resources should be created, or full-fledged tests that run the full `apply`/`output`/`destroy` cycle, and can then be used to test the actual created resources, or the state file.
 
-As an additional convenience, the module also provides an easy way to request and access the plan output (via `plan -out` and `show`) and the outputs (via `output -json`), and can return them wrapped in simple classes that simplify accessing their attributes.
+As an additional convenience, the module also provides an easy way to request and access the plan output (via `terraform plan -out` and `terraform show`) and the outputs (via `terraform output -json`), and return them wrapped in simple classes that streamline accessing their attributes.
 
 This module is heavily inspired by two projects: [Terragrunt](https://github.com/gruntwork-io/terragrunt) for the lightweight approach to testing Terraform, and [python-terraform](https://github.com/beelit94/python-terraform) for wrapping the Terraform command in Python.
 
 ## Example Usage
 
-The [`test`](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/tree/master/test) folder contains simple examples on how to write tests for both `plan` and `apply`, using either synthetic fixtures (simple representations of the plan output and output files), or minimal root modules. This is the test that uses plan output on an actual module:
+The [`test`](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/tree/master/test) folder contains simple examples on how to write tests for both `plan` and `apply`, using either synthetic fixtures (simple representations of the plan output and output files), or minimal root modules. More examples can be found in the [Cloud Foundation Fabric](https://github.com/terraform-google-modules/cloud-foundation-fabric) repository, for which this module was developed.
+
+This is a test that uses plan output on an actual module:
 
 ```hcl
 import pytest
