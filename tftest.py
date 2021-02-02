@@ -49,7 +49,8 @@ class TerraformTestError(Exception):
   pass
 
 
-def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
+# def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
+def parse_args(**kw):
   """Convert method arguments for use in Terraform commands.
 
   Args:
@@ -61,38 +62,20 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   Returns:
     A list of command arguments for use with subprocess.
   """
+  #convert 
   cmd_args = []
-  if kw.get('auto_approve'):
-    cmd_args.append('-auto-approve')
-  if kw.get('backend') is False:
-    cmd_args.append('-backend=false')
-  if kw.get('color') is False:
-    cmd_args.append('-no-color')
-  if kw.get('force_copy'):
-    cmd_args.append('-force-copy')
-  if kw.get('input') is False:
-    cmd_args.append('-input=false')
-  if kw.get('json_format') is True:
-    cmd_args.append('-json')
-  if kw.get('lock') is False:
-    cmd_args.append('-lock=false')
-  if kw.get('plugin_dir'):
-    cmd_args += ['-plugin-dir', kw['plugin_dir']]
-  if kw.get('refresh') is False:
-    cmd_args.append('-refresh=false')
-  if isinstance(init_vars, dict):
-    cmd_args += ['-backend-config={}={}'.format(k, v)
-                 for k, v in init_vars.items()]
-  elif isinstance(init_vars, str):
-    cmd_args += ['-backend-config', '{}'.format(init_vars)]
-  if tf_vars:
-    cmd_args += list(itertools.chain.from_iterable(
-        ("-var", "{}={}".format(k, v)) for k, v in tf_vars.items()
-    ))
-  if targets:
-    cmd_args += [("-target={}".format(t)) for t in targets]
-  if kw.get('tf_var_file'):
-    cmd_args.append('-var-file={}'.format(kw['tf_var_file']))
+  for key,value in kw.items():
+    flag_key = key.lower().replace('_', '-')
+    if isinstance(value, bool):
+      cmd_args.append(f'-{flag_key}={str(value).lower()}')
+    elif isinstance(value, dict):
+      cmd_args += [f'{flag_key}={k}={v}'
+                  for k, v in value.items()]
+    elif isinstance(value, list):
+      cmd_args += [f"-{flag_key}={x}" for x in value]
+    else:
+      cmd_args += [key, f'{value}']
+  print('parser: ', cmd_args)
   return cmd_args
 
 
@@ -239,18 +222,18 @@ class TerraformTest(object):
     env: a dict with custom environment variables to pass to terraform.
   """
 
-  def __init__(self, tfdir, basedir=None, terraform='terraform', env=None):
+  def __init__(self, tfdir, basedir=None, binary='terraform', env=None):
     """Set Terraform folder to operate on, and optional base directory."""
     self._basedir = basedir or os.getcwd()
-    self.terraform = terraform
+    self.binary = binary
     self.tfdir = self._abspath(tfdir)
     self.env = os.environ.copy()
     if env is not None:
       self.env.update(env)
 
   @classmethod
-  def _cleanup(cls, tfdir, filenames, deep=True):
-    """Remove linked files and .terraform folder at instance deletion."""
+  def _cleanup(cls, tfdir, filenames, binary, deep=True):
+    """Remove linked files, .terraform and/or .terragrunt-cache folder at instance deletion."""
     _LOGGER.debug('cleaning up %s %s', tfdir, filenames)
     for filename in filenames:
       path = os.path.join(tfdir, filename)
@@ -258,19 +241,24 @@ class TerraformTest(object):
         os.unlink(path)
     if not deep:
       return
-    path = os.path.join(tfdir, '.terraform')
-    if os.path.isdir(path):
-      shutil.rmtree(path)
-    path = os.path.join(tfdir, 'terraform.tfstate')
-    if os.path.isfile(path):
-      os.unlink(path)
+    
+    if binary == 'terraform':
+      path = os.path.join(tfdir, '.terraform')
+      if os.path.isdir(path):
+        shutil.rmtree(path)
+      path = os.path.join(tfdir, 'terraform.tfstate')
+      if os.path.isfile(path):
+        os.unlink(path)
+    else:
+      path = os.path.join(tfdir, '.terragrunt-cache')
+      if os.path.isdir(path):
+        shutil.rmtree(path)
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
-  def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
-            backend=True, cleanup_on_exit=True):
+  def setup(self, extra_files=None, cleanup_on_exit=True, **kw):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -305,24 +293,30 @@ class TerraformTest(object):
       else:
         _LOGGER.warning('no such file {}'.format(link_src))
     self._finalizer = weakref.finalize(
-        self, self._cleanup, self.tfdir, filenames, deep=cleanup_on_exit)
-    return self.init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend)
+        self, self._cleanup, self.tfdir, filenames, self.binary, deep=cleanup_on_exit)
+    return self.init(**kw)
 
-  def init(self, input=False, color=False, force_copy=False, plugin_dir=None,
-           init_vars=None, backend=True):
+  def init(self,**kw):
     """Run Terraform init command."""
-    cmd_args = parse_args(input=input, color=color, backend=backend,
-                          force_copy=force_copy, plugin_dir=plugin_dir,
-                          init_vars=init_vars)
+    cmd_args = parse_args(**kw)
     return self.execute_command('init', *cmd_args).out
 
-  def plan(self, input=False, color=False, refresh=True, tf_vars=None, targets=None, output=False, tf_var_file=None):
+  def init_all(self, **kw):
+    """Run Terragrunt init-all command."""
+    cmd_args = parse_args(**kw)
+    return self.execute_command('init-all', *cmd_args).out
+
+  def plan_all(self, **kw):
+    """Run Terragrunt plan-all command."""
+    cmd_args = parse_args(**kw)
+    return self.execute_command('plan-all', *cmd_args).out
+
+  def plan(self, return_output=False, **kw):
     "Run Terraform plan command, optionally returning parsed plan output."
-    cmd_args = parse_args(input=input, color=color,
-                          refresh=refresh, tf_vars=tf_vars,
-                          targets=targets,  tf_var_file=tf_var_file)
-    if not output:
+    cmd_args = parse_args(**kw)
+    if not return_output:
       return self.execute_command('plan', *cmd_args).out
+    
     with tempfile.NamedTemporaryFile() as fp:
       cmd_args.append('-out={}'.format(fp.name))
       self.execute_command('plan', *cmd_args)
@@ -332,11 +326,9 @@ class TerraformTest(object):
     except json.JSONDecodeError as e:
       raise TerraformTestError('Error decoding plan output: {}'.format(e))
 
-  def apply(self, input=False, color=False, auto_approve=True, tf_vars=None, targets=None, tf_var_file=None):
+  def apply(self, **kw):
     """Run Terraform apply command."""
-    cmd_args = parse_args(input=input, color=color,
-                          auto_approve=auto_approve, tf_vars=tf_vars,
-                          targets=targets, tf_var_file=tf_var_file)
+    cmd_args = parse_args(**kw)
     return self.execute_command('apply', *cmd_args).out
 
   def output(self, name=None, color=False, json_format=True):
@@ -344,7 +336,7 @@ class TerraformTest(object):
     cmd_args = []
     if name:
       cmd_args.append(name)
-    cmd_args += parse_args(color=color, json_format=json_format)
+    cmd_args += parse_args(**kw)
     output = self.execute_command('output', *cmd_args).out
     _LOGGER.debug('output %s', output)
     if json_format:
@@ -363,8 +355,7 @@ class TerraformTest(object):
 
   def refresh(self, color=False, lock=False, tf_vars=None, targets=None):
     """Run Terraform refresh command."""
-    cmd_args = parse_args(color=color, lock=lock,
-                          tf_vars=tf_vars, targets=targets)
+    cmd_args = parse_args(**kw)
     return self.execute_command('refresh', *cmd_args).out
 
   def state_pull(self):
@@ -379,8 +370,9 @@ class TerraformTest(object):
   def execute_command(self, cmd, *cmd_args):
     """Run arbitrary Terraform command."""
     _LOGGER.debug([cmd, cmd_args])
-    cmdline = [self.terraform, cmd]
+    cmdline = [self.binary, cmd]
     cmdline += cmd_args
+    print('cmdline: ', cmdline)
     try:
       p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE, cwd=self.tfdir, env=self.env)
