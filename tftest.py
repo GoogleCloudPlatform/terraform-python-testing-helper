@@ -32,6 +32,7 @@ import shutil
 import subprocess
 import tempfile
 import weakref
+import re
 
 __version__ = '1.5.4'
 
@@ -65,17 +66,18 @@ def parse_args(**kw):
   #convert 
   cmd_args = []
   for key,value in kw.items():
-    flag_key = key.lower().replace('_', '-')
+    flag_key = f"-{key.lower().replace('_', '-')}"
     if isinstance(value, bool):
-      cmd_args.append(f'-{flag_key}={str(value).lower()}')
+      cmd_args.append(f'{flag_key}={str(value).lower()}')
     elif isinstance(value, dict):
       cmd_args += [f'{flag_key}={k}={v}'
                   for k, v in value.items()]
     elif isinstance(value, list):
-      cmd_args += [f"-{flag_key}={x}" for x in value]
+      cmd_args += [f'{flag_key}={x}' for x in value]
+    elif isinstance(value, str):
+      cmd_args.append(f'{flag_key}={value}')
     else:
       cmd_args += [key, f'{value}']
-  print('parser: ', cmd_args)
   return cmd_args
 
 
@@ -301,37 +303,74 @@ class TerraformTest(object):
     cmd_args = parse_args(**kw)
     return self.execute_command('init', *cmd_args).out
 
-  def init_all(self, **kw):
-    """Run Terragrunt init-all command."""
-    cmd_args = parse_args(**kw)
-    return self.execute_command('init-all', *cmd_args).out
-
-  def plan_all(self, **kw):
-    """Run Terragrunt plan-all command."""
-    cmd_args = parse_args(**kw)
-    return self.execute_command('plan-all', *cmd_args).out
-
-  def plan(self, return_output=False, **kw):
+  def plan(self, output=False, **kw):
     "Run Terraform plan command, optionally returning parsed plan output."
+    
     cmd_args = parse_args(**kw)
-    if not return_output:
+    if not output:
       return self.execute_command('plan', *cmd_args).out
     
-    with tempfile.NamedTemporaryFile() as fp:
-      cmd_args.append('-out={}'.format(fp.name))
+    if 'out' not in kw:
+      with tempfile.NamedTemporaryFile() as fp:
+        cmd_args.append('-out={}'.format(fp.name))
+        self.execute_command('plan', *cmd_args)
+        result = self.execute_command('show', '-no-color', '-json', fp.name)    
+    else:
       self.execute_command('plan', *cmd_args)
-      result = self.execute_command('show', '-no-color', '-json', fp.name)
+      result = self.execute_command('show', '-no-color', '-json', kw['out'])
+    
     try:
       return TerraformPlanOutput(json.loads(result.out))
     except json.JSONDecodeError as e:
       raise TerraformTestError('Error decoding plan output: {}'.format(e))
+  
+  def plan_all(self, output=False, **kw):
+    """
+    Run Terragraun plan all command, optionally returning parsed plan output.
+    Args:
+    output: Determines if the parsed plan output should be returned
+    **kw: Command's associated flag arguments. Must replace hypens with underscores for keyword flag arguments
+      (e.g. var-file -> var_file)
+    """
+
+    cmd_args = parse_args(**kw)
+    if not output:
+      return self.execute_command('run-all', 'plan', *cmd_args).out
+
+    if 'out' not in kw:
+      with tempfile.NamedTemporaryFile() as fp:
+        cmd_args.append('-out={}'.format(fp.name))
+        self.execute_command('run-all', 'plan', *cmd_args)
+        result = self.execute_command('run-all', 'show', '-no-color', '-json', fp.name)    
+    else:
+      self.execute_command('run-all', 'plan', *cmd_args)
+      result = self.execute_command('run-all', 'show', '-no-color', '-json', kw['out'])
+    
+    #TODO: Find better way to parse result other than regex
+    plans = re.split('\n(?=\\{"format_version"\\:)', result.out)
+    output = []
+    for plan in plans:
+      try:
+        out = TerraformPlanOutput(json.loads(plan))  
+        #TODO: Find a way to distinguish each plan from each other (couldn't find an attr in `out` to use as a key to pair with `out` value)   
+        # for now returns list of tftest.TerraformPlanModule objects
+        output.append(out.root_module)
+      except json.JSONDecodeError as e:
+        raise TerraformTestError('Error decoding plan output: {}'.format(e))
+    
+    return output
 
   def apply(self, **kw):
-    """Run Terraform apply command."""
+    """
+    Run Terraform apply command.
+    Args:
+    **kw: Command's associated flag arguments. Must replace hypens with underscores for keyword flag arguments
+      (e.g. var-file -> var_file)
+    """
     cmd_args = parse_args(**kw)
     return self.execute_command('apply', *cmd_args).out
 
-  def output(self, name=None, color=False, json_format=True):
+  def output(self, name=None, json_format=True, **kw):
     """Run Terraform output command."""
     cmd_args = []
     if name:
@@ -346,14 +385,12 @@ class TerraformTest(object):
         _LOGGER.warning('error decoding output: {}'.format(e))
     return output
 
-  def destroy(self, color=False, auto_approve=True, tf_vars=None, targets=None, tf_var_file=None):
+  def destroy(self, **kw):
     """Run Terraform destroy command."""
-    cmd_args = parse_args(color=color, auto_approve=auto_approve,
-                          tf_vars=tf_vars, targets=targets,
-                          tf_var_file=tf_var_file)
+    cmd_args = parse_args(**kw)
     return self.execute_command('destroy', *cmd_args).out
 
-  def refresh(self, color=False, lock=False, tf_vars=None, targets=None):
+  def refresh(self, **kw):
     """Run Terraform refresh command."""
     cmd_args = parse_args(**kw)
     return self.execute_command('refresh', *cmd_args).out
@@ -372,7 +409,6 @@ class TerraformTest(object):
     _LOGGER.debug([cmd, cmd_args])
     cmdline = [self.binary, cmd]
     cmdline += cmd_args
-    print('cmdline: ', cmdline)
     try:
       p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE, cwd=self.tfdir, env=self.env)
