@@ -23,7 +23,9 @@ steps:
         wget https://releases.hashicorp.com/terraform/${_TERRAFORM_VERSION}/terraform_${_TERRAFORM_VERSION}_linux_amd64.zip &&
         unzip terraform_${_TERRAFORM_VERSION}_linux_amd64.zip -d /builder/home/.local/bin &&
         rm terraform_${_TERRAFORM_VERSION}_linux_amd64.zip &&
-        chmod 755 /builder/home/.local/bin/terraform
+        wget -O /builder/home/.local/bin/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v${_TERRAGRUNT_VERSION}/terragrunt_linux_amd64 &&
+        chmod 755 /builder/home/.local/bin/terraform &&
+        chmod 755 /builder/home/.local/bin/terragrunt
   # TODO(ludoo): split into two triggers with different filters
   - name: python:3.6-alpine
     id: test
@@ -36,6 +38,7 @@ steps:
 
 substitutions:
   _TERRAFORM_VERSION: 0.13.5
+  _TERRAGRUNT_VERSION: 0.28.2
 
 tags:
   - "ci"
