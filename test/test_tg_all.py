@@ -12,32 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"Test init and apply using an actual example."
-import os
-import sys
-
-p = os.path.abspath('../')
-if p not in sys.path:
-    sys.path.append(p)
-
 import pytest
 import tftest
 
+import os
+import sys
 
-# @pytest.fixture
-# def output(fixtures_dir):
-#   tf = tftest.TerraformTest('tg_plan', fixtures_dir, binary='terragrunt')
-#   tf.setup()
-#   tf.plan_all()
-#   yield tf.plan_all()
-#   yield tf.output()
-#   tf.destroy()
+@pytest.fixture
+def output(fixtures_dir):
+  tf = tftest.TerraformTest('tg_apply_all', fixtures_dir, binary='terragrunt')
+  tf.setup()
+  tf.tg_apply(all=True, output=False)
+  yield tf.tg_output(all=True)
 
-
-# def test_apply(output):
-#     print(output)
-
-tf = tftest.TerraformTest('fixtures/tg_plan', binary='terragrunt')
-tf.setup()
-plan = tf.plan(output=True)
-print('plan: ', plan)
+# TODO: Add output test

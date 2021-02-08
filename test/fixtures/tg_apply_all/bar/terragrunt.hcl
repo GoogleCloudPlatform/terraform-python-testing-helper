@@ -3,7 +3,7 @@ include {
 }
 
 terraform {
-  source = "../../apply"
+  source = "../..//apply"
 }
 
 inputs = {
