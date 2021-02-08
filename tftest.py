@@ -61,6 +61,51 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     A list of command arguments for use with subprocess.
   """
   cmd_args = []
+
+  if kw.get('tg_config'):
+    cmd_args += ['--terragrunt-config', kw['tg_config']]
+  if kw.get('tg_tfpath'):
+    cmd_args += ['--terragrunt-tfpath', kw['tg_tfpath']]
+  if kw.get('tg_no_auto_init') == True:
+    cmd_args.append('--terragrunt-no-auto-init')
+  if kw.get('tg_no_auto_retry') == True:
+    cmd_args.append('--terragrunt-no-auto-retry')
+  if kw.get('tg_non_interactive'):
+    cmd_args.append('--terragrunt-non-interactive')
+  if kw.get('tg_working_dir'):
+    cmd_args += ['--terragrunt-working-dir', kw['tg_working_dir']]
+  if kw.get('tg_download_dir'):
+    cmd_args += ['--terragrunt-download-dir', kw['tg_download_dir']]
+  if kw.get('tg_source'):
+    cmd_args += ['--terragrunt-source', kw['tg_source']]
+  if kw.get('tg_source_update') == True:
+    cmd_args.append('--terragrunt-source-update')
+  if kw.get('tg_iam_role'):
+    cmd_args += ['--terragrunt-iam-role', kw['tg_iam_role']]
+  if kw.get('tg_ignore_dependency_errors') == True:
+    cmd_args.append('--terragrunt-ignore-dependency-errors')
+  if kw.get('tg_ignore_dependency_order') == True:
+    cmd_args.append('--terragrunt-ignore-dependency-order')
+  if kw.get('tg_ignore_external_dependencies'):
+    cmd_args.append('--terragrunt-ignore-external-dependencies')
+  if kw.get('tg_include_external_dependencies') == False:
+    cmd_args.append('--terragrunt-include-external-dependencies')
+  if kw.get('tg_parallelism'):
+    cmd_args.append('terragrunt-parralism={}'.format(kw['tg_parallelism']))
+  if kw.get('tg_exclude_dir'):
+    cmd_args += ['--terragrunt-exclude-dir', kw['tg_exclude_dir']]
+  if kw.get('tg_include_dir'):
+    cmd_args += ['--terragrunt-include-dir', kw['tg_include_dir']]
+  if kw.get('tg_check') == True:
+    cmd_args.append('--terragrunt-check')
+  if kw.get('tg_hclfmt_file'):
+    cmd_args += ['--terragrunt-hclfmt-file', kw['tg_hclfmt_file']]
+  if isinstance(kw.get('tg_override_attr'), dict):
+    cmd_args += ['--terragrunt-override-attr={}={}'.format(k, v)
+                 for k, v in kw.get('tg_override_attr').items()]
+  if kw.get('tg_debug') == True:
+    cmd_args.append('--terragrunt-debug')
+
   if kw.get('auto_approve'):
     cmd_args.append('-auto-approve')
   if kw.get('backend') is False:
@@ -92,51 +137,6 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     cmd_args += [("-target={}".format(t)) for t in targets]
   if kw.get('tf_var_file'):
     cmd_args.append('-var-file={}'.format(kw['tf_var_file']))
-  
-  # Terragrunt global flags
-  if kw.get('tg_config'):
-    cmd_args += ['--terragrunt-config', kw['tg_config']]
-  if kw.get('tg_tfpath'):
-    cmd_args += ['--terragrunt-tfpath', kw['tg_tfpath']]
-  if kw.get('tg_no_auto_init') == True:
-    cmd_args.append('--terragrunt-no-auto-init=true')
-  if kw.get('tg_no_auto_retry') == True:
-    cmd_args.append('--terragrunt-no-auto-retry=true')
-  if kw.get('tg_non_interactive') == True:
-    cmd_args.append('--terragrunt-non-interactive=true')
-  if kw.get('tg_working_dir'):
-    cmd_args += ['--terragrunt-working-dir', kw['tg_working_dir']]
-  if kw.get('tg_download_dir'):
-    cmd_args += ['--terragrunt-download-dir', kw['tg_download_dir']]
-  if kw.get('tg_source'):
-    cmd_args += ['--terragrunt-source', kw['tg_source']]
-  if kw.get('tg_source_update') == True:
-    cmd_args.append('--terragrunt-source-update=true')
-  if kw.get('tg_iam_role'):
-    cmd_args += ['--terragrunt-iam-role', kw['tg_iam_role']]
-  if kw.get('tg_ignore_dependency_errors') == True:
-    cmd_args.append('--terragrunt-ignore-dependency-errors=true')
-  if kw.get('tg_ignore_dependency_order') == True:
-    cmd_args.append('--terragrunt-ignore-dependency-order=true')
-  if kw.get('tg_ignore_external_dependencies') == True:
-    cmd_args.append('--terragrunt-ignore-external-dependencies=true')
-  if kw.get('tg_include_external_dependencies') == False:
-    cmd_args.append('--terragrunt-include-external-dependencies=false')
-  if kw.get('tg_parallelism'):
-    cmd_args.append('terragrunt-parralism={}'.format(kw['tg_parallelism']))
-  if kw.get('tg_exclude_dir'):
-    cmd_args += ['--terragrunt-exclude-dir', kw['tg_exclude_dir']]
-  if kw.get('tg_include_dir'):
-    cmd_args += ['--terragrunt-include-dir', kw['tg_include_dir']]
-  if kw.get('tg_check') == True:
-    cmd_args.append('--terragrunt-check')
-  if kw.get('tg_hclfmt_file'):
-    cmd_args += ['--terragrunt-hclfmt-file', kw['tg_hclfmt_file']]
-  if isinstance(kw.get('tg_override_attr'), dict):
-    cmd_args += ['--terragrunt-override-attr={}={}'.format(k, v)
-                 for k, v in kw.get('tg_override_attr').items()]
-  if kw.get('tg_debug') == True:
-    cmd_args.append('--terragrunt-debug=true')
 
   return cmd_args
 
@@ -314,7 +314,7 @@ class TerraformTest(object):
       path = os.path.join(tfdir, '.terragrunt-cache')
       if os.path.isdir(path):
         shutil.rmtree(path)
-  
+
   def tg_global_doc(tg_func):
     doc = """
       all: Runs Terragrunt command on all subfolders if True
@@ -385,7 +385,9 @@ class TerraformTest(object):
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
   def setup(self, all=False, extra_files=None, plugin_dir=None, init_vars=None,
-            backend=True, cleanup_on_exit=True):
+            backend=True, cleanup_on_exit=True, tg_non_interactive=False, 
+            tg_source_update=False, tg_config=None, tg_working_dir=None, 
+            **kw):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -422,12 +424,13 @@ class TerraformTest(object):
     self._finalizer = weakref.finalize(
         self, self._cleanup, self.tfdir, filenames, self.binary, deep=cleanup_on_exit)
   
-    if all and self.binary == 'terragrunt':
-      return self.tg_init(all=True, plugin_dir=plugin_dir, init_vars=init_vars, backend=backend)
-    elif not all and self.binary == 'terragrunt':
-      return self.tg_init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend)
-    else:
-      return self.tg_init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend)
+    if self.binary == 'terragrunt':
+      return self.tg_init(all=all, init_vars=init_vars,
+                          backend=backend, plugin_dir=plugin_dir,
+                          tg_non_interactive=tg_non_interactive, tg_source_update=tg_source_update, 
+                          tg_config=tg_config, tg_working_dir=tg_working_dir, **kw)
+
+    return self.tf_init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend)
   
   def tf_init(self, input=False, no_color=True, plugin_dir=None,
            init_vars=None, backend=True):
@@ -439,11 +442,14 @@ class TerraformTest(object):
 
   @tg_global_doc
   def tg_init(self, all=False, input=False, no_color=True, plugin_dir=None,
-              init_vars=None, backend=True, **kw):
+              init_vars=None, backend=True, tg_non_interactive=True, 
+              tg_source_update=False, tg_config=None, tg_working_dir=None, **kw):
     """Run Terragrunt init command."""
     cmd_args = parse_args(input=input, no_color=no_color, 
                           backend=backend, plugin_dir=plugin_dir,
-                          init_vars=init_vars)
+                          init_vars=init_vars, tg_non_interactive=tg_non_interactive,
+                          tg_source_update=tg_source_update, tg_config=tg_config,
+                          tg_working_dir=tg_working_dir, **kw)
     if all:
       return self.execute_command('run-all', 'init', *cmd_args).out
     else:
@@ -455,9 +461,11 @@ class TerraformTest(object):
     return self.execute_command('validate', *cmd_args).out
 
   @tg_global_doc
-  def tg_validate(self, no_color=True, json=None, **kw):
+  def tg_validate(self, no_color=True, json=None, tg_non_interactive=True, 
+                  tg_source_update=False, tg_config=None, tg_working_dir=None, **kw):
     """Run Terragrunt validate command."""
-    cmd_args = parse_args(no_color=True, json=None)
+    cmd_args = parse_args(no_color=no_color, json=json, tg_non_interactive=tg_non_interactive, 
+                  tg_source_update=tg_source_update, tg_config=tg_config, tg_working_dir=tg_working_dir, **kw)
     if all:
       return self.execute_command('run-all', 'validate', *cmd_args).out
     else:
@@ -477,7 +485,8 @@ class TerraformTest(object):
       output: Determines if output will be returned. 
       tf_var_file: Path to terraform variable configuration file relative to `self.tfdir`.
     """ 
-    result = self._plan('plan', input=False, no_color=True, refresh=True, tf_vars=None, targets=None, output=False, tf_var_file=None)
+    result = self._plan('plan', input=input, no_color=no_color, refresh=refresh, 
+                        tf_vars=tf_vars, targets=targets, output=output, tf_var_file=tf_var_file)
 
     try:
       return TerraformPlanOutput(json.loads(result.out))
@@ -485,7 +494,10 @@ class TerraformTest(object):
       raise TerraformTestError('Error decoding plan output: {}'.format(e))
   
   @tg_global_doc
-  def tg_plan(self, all=False, input=False, no_color=True, refresh=True, tf_vars=None, targets=None, output=False, tf_var_file=None, **kw):
+  def tg_plan(self, all=False, input=False, no_color=True, refresh=True,
+              tf_vars=None, targets=None, output=False, tf_var_file=None, 
+              tg_non_interactive=True, tg_source_update=False, tg_config=None, 
+              tg_working_dir=None, **kw):
     """
     Run Terragrunt plan command, optionally returning parsed plan output.
 
@@ -502,7 +514,9 @@ class TerraformTest(object):
     result = self._plan(all=all, output=output,
                         input=input, no_color=no_color, 
                         refresh=refresh, tf_vars=tf_vars, 
-                        targets=targets, tf_var_file=tf_var_file)
+                        targets=targets, tf_var_file=tf_var_file,
+                        tg_non_interactive=tg_non_interactive, tg_source_update=tg_source_update, 
+                        tg_config=tg_config, tg_working_dir=tg_working_dir, **kw)
     if not output:
       return result
 
@@ -538,13 +552,15 @@ class TerraformTest(object):
         and its dependencies
       tf_var_file: Path to terraform variable configuration file relative to `self.tfdir`.
     """
-    cmd_args = parse_args(input=False, no_color=True, 
-                          auto_approve=True, tf_vars=None, 
-                          targets=None, tf_var_file=None)
+    cmd_args = parse_args(input=input, no_color=no_color, 
+                          auto_approve=auto_approve, tf_vars=tf_vars, 
+                          targets=targets, tf_var_file=tf_var_file)
     return self.execute_command('apply', *cmd_args).out
 
   @tg_global_doc
-  def tg_apply(self, all=False, input=False, no_color=True, auto_approve=True, tf_vars=None, targets=None, tf_var_file=None, **kw):
+  def tg_apply(self, all=False, input=False, no_color=True, auto_approve=True, tf_vars=None, 
+               targets=None, tf_var_file=None, tg_non_interactive=True, 
+               tg_source_update=False, tg_config=None, tg_working_dir=None, **kw):
     """
     Run Terragrunt apply command.
     
@@ -557,9 +573,11 @@ class TerraformTest(object):
         and its dependencies
       tf_var_file: Path to terraform variable configuration file relative to `self.tfdir`.
     """
-    cmd_args = parse_args(input=False, no_color=True, 
-                          auto_approve=True, tf_vars=None, 
-                          targets=None, tf_var_file=None)
+    cmd_args = parse_args(input=input, no_color=no_color, 
+                          auto_approve=auto_approve, tf_vars=tf_vars, 
+                          targets=targets, tf_var_file=tf_var_file,
+                          tg_non_interactive=tg_non_interactive, tg_source_update=tg_source_update, 
+                          tg_config=tg_config, tg_working_dir=tg_working_dir, **kw)
 
     if all:
       return self.execute_command('run-all', 'apply', *cmd_args).out
@@ -588,9 +606,13 @@ class TerraformTest(object):
         _LOGGER.warning('error decoding output: {}'.format(e))
     return output
   
-  def tg_output(self, all=False, name=None, no_color=True, json_format=True):
+  def tg_output(self, all=False, name=None, no_color=True, json_format=True, 
+                tg_non_interactive=True, tg_source_update=False, tg_config=None, 
+                tg_working_dir=None, **kw):
     """Run Terragrunt output command."""
-    output = self._output(all=all, name=name, no_color=no_color, json_format=json_format)
+    output = self._output(all=all, name=name, no_color=no_color, json_format=json_format,
+                          tg_non_interactive=tg_non_interactive, tg_source_update=tg_source_update, 
+                          tg_config=tg_config, tg_working_dir=tg_working_dir, **kw)
     
     # TODO: Figure out how to parse terragrunt run-all output command to return dict of {directory: output}
     _LOGGER.debug('output %s', output)
