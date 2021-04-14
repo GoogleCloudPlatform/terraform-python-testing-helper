@@ -173,7 +173,7 @@ class TerraformPlanOutput(TerraformJSONBase):
         planned_values.get('root_module', {}))
     self.outputs = TerraformValueDict(planned_values.get('outputs', {}))
     self.resource_changes = dict((v['address'], v)
-                                 for v in self._raw['resource_changes'])
+                                 for v in self._raw.get('resource_changes', {}))
     # there might be no variables defined
     self.variables = TerraformValueDict(raw.get('variables', {}))
 
