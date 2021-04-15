@@ -83,7 +83,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - remove the `teardown` method
   - unify the `plan` and `plan_out` methods
 
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.4...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.5...HEAD
+[1.5.5]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.4...v1.5.5
 [1.5.4]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.1...v1.5.2
