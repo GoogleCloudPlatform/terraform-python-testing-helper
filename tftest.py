@@ -33,7 +33,7 @@ import subprocess
 import tempfile
 import weakref
 
-__version__ = '1.5.4'
+__version__ = '1.5.6'
 
 _LOGGER = logging.getLogger('tftest')
 
