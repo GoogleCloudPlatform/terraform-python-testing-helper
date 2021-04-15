@@ -73,3 +73,10 @@ def test_modules(plan_out):
 def test_child_modules(plan_out):
   mod = plan_out.modules['module.parent'].child_modules['module.child']
   assert mod.resources['eggs.someeggs']['values']['eggs-value'] == 'eggs'
+
+
+def test_plan_with_no_resources_succeeds(fixtures_dir):
+  tf = tftest.TerraformTest('plan_no_resource_changes', fixtures_dir)
+  result = tf.plan(output=True)
+
+  assert result.outputs['just_an_output'] == 'Hello, plan!'
