@@ -34,7 +34,7 @@ import tempfile
 import weakref
 import re
 
-__version__ = '1.5.5'
+__version__ = '1.5.6'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -139,7 +139,6 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     cmd_args += [("-target={}".format(t)) for t in targets]
   if kw.get('tf_var_file'):
     cmd_args.append('-var-file={}'.format(kw['tf_var_file']))
-
   return cmd_args
 
 
@@ -220,7 +219,7 @@ class TerraformPlanOutput(TerraformJSONBase):
         planned_values.get('root_module', {}))
     self.outputs = TerraformValueDict(planned_values.get('outputs', {}))
     self.resource_changes = dict((v['address'], v)
-                                 for v in self._raw['resource_changes'])
+                                 for v in self._raw.get('resource_changes', {}))
     # there might be no variables defined
     self.variables = TerraformValueDict(raw.get('variables', {}))
 
@@ -347,8 +346,6 @@ class TerraformTest(object):
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
-
-    # print(inspect.getdoc(self.setup))
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
   def setup(self, all=False, extra_files=None, plugin_dir=None, init_vars=None,
@@ -613,7 +610,6 @@ class TerraformTest(object):
     _LOGGER.debug([cmd, cmd_args])
     cmdline = [self.binary, cmd]
     cmdline += cmd_args
-    print(cmdline)
     try:
       p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE, cwd=self.tfdir, env=self.env)
