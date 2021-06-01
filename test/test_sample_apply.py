@@ -24,7 +24,7 @@ def output(fixtures_dir):
   tf.setup()
   tf.apply()
   yield tf.output()
-  tf.destroy()
+  tf.destroy(**{"auto_approve": True})
 
 
 def test_apply(output):

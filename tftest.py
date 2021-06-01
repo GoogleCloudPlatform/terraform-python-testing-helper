@@ -317,12 +317,12 @@ class TerraformTest(object):
       if os.path.isdir(path):
         shutil.rmtree(path)
 
-  def _plan(self, all=False, output=False,  **kw):
+  def _plan(self, run_all=False, output=False, **kw):
     """
     Run Terragrunt or Terraform plan and optionally return the plan output.
 
     Args:
-      all: Runs Terragrunt command on all subfolders if True
+      run_all: Runs Terragrunt command on all subfolders if True
       output: Returns the output of the plan command
     """
 
@@ -333,7 +333,7 @@ class TerraformTest(object):
         cmd_args.append('-out={}'.format(fp.name))
         kw['out'] = fp.name
 
-    if all:
+    if self.binary == "terragrunt" and run_all:
       result = self.execute_command('run-all', 'plan', *cmd_args).out
       if not output:
         return result
@@ -473,7 +473,7 @@ class TerraformTest(object):
       output: Determines if output will be returned.
       tf_var_file: Path to terraform variable configuration file relative to `self.tfdir`.
     """
-    result = self._plan(all=all, output=output,
+    result = self._plan(run_all=all, output=output,
                         input=input, no_color=no_color,
                         refresh=refresh, tf_vars=tf_vars,
                         targets=targets, tf_var_file=tf_var_file,
@@ -610,6 +610,7 @@ class TerraformTest(object):
     _LOGGER.debug([cmd, cmd_args])
     cmdline = [self.binary, cmd]
     cmdline += cmd_args
+    print(cmdline)
     try:
       p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE, cwd=self.tfdir, env=self.env)
