@@ -18,11 +18,20 @@ import tftest
 import os
 import sys
 
+
 @pytest.fixture
 def output(fixtures_dir):
   tf = tftest.TerraformTest('tg_apply_all', fixtures_dir, binary='terragrunt')
   tf.setup()
   tf.tg_apply(all=True, output=False)
   yield tf.tg_output(all=True)
+  tf.destroy(**{"auto_approve": True})
 
-# TODO: Add output test
+
+def test_apply(output):
+  triggers = [o["triggers"] for o in output]
+  assert [{'name': 'foo', 'template': 'sample template foo'}] in triggers
+  assert [{'name': 'bar', 'template': 'sample template bar'}] in triggers
+  assert [{'name': 'one', 'template': 'sample template one'},
+          {'name': 'two', 'template': 'sample template two'}] in triggers
+  assert len(output) == 3

@@ -577,11 +577,12 @@ class TerraformTest(object):
                           tg_non_interactive=tg_non_interactive, tg_source_update=tg_source_update,
                           tg_config=tg_config, tg_working_dir=tg_working_dir, **kw)
 
-    # TODO: Figure out how to parse terragrunt run-all output command to return
-    #       dict of {directory: output}
     _LOGGER.debug('output %s', output)
     try:
-      output = TerraformValueDict(json.loads(output))
+      # run-all output a bunch of jsons back to back in one string(no comma),
+      # convert this to a valid json
+      dicts = json.loads("[" + re.sub(r"\}\s*\{", "}, {", output) + "]")
+      output = [TerraformValueDict(d) for d in dicts]
     except json.JSONDecodeError as e:
       _LOGGER.warning('error decoding output: {}'.format(e))
     return output
