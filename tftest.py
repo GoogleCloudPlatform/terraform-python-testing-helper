@@ -51,6 +51,33 @@ class TerraformTestError(Exception):
   pass
 
 
+_TG_BOOL_ARGS = [
+  "no_auto_init",
+  "no_auto_retry",
+  "source_update",
+  "ignore_dependency_errors",
+  "ignore_dependency_order",
+  "include_external_dependencies",
+  "check",
+  "debug",
+  'non_interactive',
+  'ignore_external_dependencies',
+]
+
+
+_TG_KV_ARGS = [
+  "iam_role",
+  "config",
+  "tfpath",
+  "working_dir",
+  "download_dir",
+  "source",
+  "exclude_dir",
+  "include_dir",
+  "hclfmt_file",
+]
+
+
 def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   """Convert method arguments for use in Terraform commands.
 
@@ -65,49 +92,16 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   """
   cmd_args = []
 
-  if kw.get('tg_config'):
-    cmd_args += ['--terragrunt-config', kw['tg_config']]
-  if kw.get('tg_tfpath'):
-    cmd_args += ['--terragrunt-tfpath', kw['tg_tfpath']]
-  if kw.get('tg_no_auto_init') == True:
-    cmd_args.append('--terragrunt-no-auto-init')
-  if kw.get('tg_no_auto_retry') == True:
-    cmd_args.append('--terragrunt-no-auto-retry')
-  if kw.get('tg_non_interactive'):
-    cmd_args.append('--terragrunt-non-interactive')
-  if kw.get('tg_working_dir'):
-    cmd_args += ['--terragrunt-working-dir', kw['tg_working_dir']]
-  if kw.get('tg_download_dir'):
-    cmd_args += ['--terragrunt-download-dir', kw['tg_download_dir']]
-  if kw.get('tg_source'):
-    cmd_args += ['--terragrunt-source', kw['tg_source']]
-  if kw.get('tg_source_update') == True:
-    cmd_args.append('--terragrunt-source-update')
-  if kw.get('tg_iam_role'):
-    cmd_args += ['--terragrunt-iam-role', kw['tg_iam_role']]
-  if kw.get('tg_ignore_dependency_errors') == True:
-    cmd_args.append('--terragrunt-ignore-dependency-errors')
-  if kw.get('tg_ignore_dependency_order') == True:
-    cmd_args.append('--terragrunt-ignore-dependency-order')
-  if kw.get('tg_ignore_external_dependencies'):
-    cmd_args.append('--terragrunt-ignore-external-dependencies')
-  if kw.get('tg_include_external_dependencies') == True:
-    cmd_args.append('--terragrunt-include-external-dependencies')
+  cmd_args += [f'--terragrunt-{arg.replace("_", "-")}'
+               for arg in _TG_BOOL_ARGS if kw.get(f"tg_{arg}")]
+  for arg in _TG_KV_ARGS:
+    if kw.get(f"tg_{arg}"):
+      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}', kw[f"tg_{arg}"]]
   if kw.get('tg_parallelism'):
     cmd_args.append('terragrunt-parralism={}'.format(kw['tg_parallelism']))
-  if kw.get('tg_exclude_dir'):
-    cmd_args += ['--terragrunt-exclude-dir', kw['tg_exclude_dir']]
-  if kw.get('tg_include_dir'):
-    cmd_args += ['--terragrunt-include-dir', kw['tg_include_dir']]
-  if kw.get('tg_check') == True:
-    cmd_args.append('--terragrunt-check')
-  if kw.get('tg_hclfmt_file'):
-    cmd_args += ['--terragrunt-hclfmt-file', kw['tg_hclfmt_file']]
   if isinstance(kw.get('tg_override_attr'), dict):
     cmd_args += ['--terragrunt-override-attr={}={}'.format(k, v)
                  for k, v in kw.get('tg_override_attr').items()]
-  if kw.get('tg_debug') == True:
-    cmd_args.append('--terragrunt-debug')
 
   if kw.get('auto_approve'):
     cmd_args.append('-auto-approve')
