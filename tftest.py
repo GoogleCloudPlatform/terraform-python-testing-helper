@@ -33,6 +33,7 @@ import subprocess
 import tempfile
 import weakref
 import re
+from typing import List
 
 __version__ = '1.5.6'
 
@@ -291,6 +292,7 @@ class TerraformTest(object):
     self.binary = binary
     self.tfdir = self._abspath(tfdir)
     self.env = os.environ.copy()
+    self.run_all = False
     if env is not None:
       self.env.update(env)
 
@@ -333,16 +335,10 @@ class TerraformTest(object):
         cmd_args.append('-out={}'.format(fp.name))
         kw['out'] = fp.name
 
-    if self.binary == "terragrunt" and run_all:
-      result = self.execute_command('run-all', 'plan', *cmd_args).out
-      if not output:
-        return result
-      return self.execute_command('run-all', 'show', '-no-color', '-json', kw['out'])
-    else:
-      result = self.execute_command('plan', *cmd_args).out
-      if not output:
-        return result
-      return self.execute_command('show', '-no-color', '-json', kw['out'])
+    result = self.execute_command(*self._racmd(), 'plan', *cmd_args).out
+    if not output:
+      return result
+    return self.execute_command(*self._racmd(), 'show', '-no-color', '-json', kw['out'])
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
@@ -413,6 +409,7 @@ class TerraformTest(object):
                           init_vars=init_vars, tg_non_interactive=tg_non_interactive,
                           tg_source_update=tg_source_update, tg_config=tg_config,
                           tg_working_dir=tg_working_dir, **kw)
+    self.run_all = True
     if all:
       return self.execute_command('run-all', 'init', *cmd_args).out
     else:
@@ -540,22 +537,20 @@ class TerraformTest(object):
                           targets=targets, tf_var_file=tf_var_file,
                           tg_non_interactive=tg_non_interactive, tg_source_update=tg_source_update,
                           tg_config=tg_config, tg_working_dir=tg_working_dir, **kw)
-
-    if all:
-      return self.execute_command('run-all', 'apply', *cmd_args).out
-    else:
-      return self.execute_command('apply', *cmd_args).out
+    self.run_all = all
+    return self.execute_command(*self._racmd(), 'apply', *cmd_args).out
 
   def _output(self, all=False, name=None, **kw):
     cmd_args = parse_args(**kw)
     if name:
       cmd_args.append(name)
 
-    if all:
-      output = self.execute_command('run-all', 'output', *cmd_args).out
-    else:
-      output = self.execute_command('output', *cmd_args).out
+    output = self.execute_command(*self._racmd(), 'output', *cmd_args).out
     return output
+
+  def _racmd(self) -> List[str]:
+    """if run_all return ['run-all'] else [] """
+    return ['run-all'] if self.binary == 'terragrunt' and self.run_all else []
 
   def output(self, name=None, no_color=True, json_format=True):
     """Run Terraform output command."""

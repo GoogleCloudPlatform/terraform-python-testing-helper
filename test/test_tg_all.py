@@ -22,16 +22,32 @@ import sys
 @pytest.fixture
 def output(fixtures_dir):
   tf = tftest.TerraformTest('tg_apply_all', fixtures_dir, binary='terragrunt')
-  tf.setup()
+  tf.setup(all=True)
   tf.tg_apply(all=True, output=False)
   yield tf.tg_output(all=True)
   tf.destroy(**{"auto_approve": True})
 
 
-def test_apply(output):
+@pytest.fixture
+def bar_output(fixtures_dir):
+  tf = tftest.TerraformTest(os.path.join('tg_apply_all', 'bar'),
+                            fixtures_dir, binary='terragrunt')
+  tf.setup()
+  tf.tg_apply(all=False, output=False)
+  yield tf.tg_output(all=True)
+  tf.destroy(**{"auto_approve": True})
+
+
+def test_run_all_apply(output):
   triggers = [o["triggers"] for o in output]
   assert [{'name': 'foo', 'template': 'sample template foo'}] in triggers
   assert [{'name': 'bar', 'template': 'sample template bar'}] in triggers
   assert [{'name': 'one', 'template': 'sample template one'},
           {'name': 'two', 'template': 'sample template two'}] in triggers
   assert len(output) == 3
+
+
+def test_tg_single_directory_apply(bar_output):
+  triggers = [o["triggers"] for o in bar_output]
+  assert [{'name': 'bar', 'template': 'sample template bar'}] in triggers
+  assert len(bar_output) == 1
