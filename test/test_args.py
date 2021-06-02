@@ -13,6 +13,7 @@
 # limitations under the License.
 
 "Test the function for mapping Terraform arguments."
+import pytest
 
 import tftest
 
@@ -45,10 +46,52 @@ ARGS_TESTS = (
 )
 
 
-def test_args():
+@pytest.mark.parametrize("kwargs, expected", ARGS_TESTS)
+def test_args(kwargs, expected):
   assert tftest.parse_args() == []
-  for kwargs, expected in ARGS_TESTS:
-    assert tftest.parse_args(**kwargs) == expected
+  assert tftest.parse_args(**kwargs) == expected
+
+
+TERRAGRUNT_ARGS_TESTCASES = [
+    ({"tg_config": "Obama"}, ['--terragrunt-config', 'Obama']),
+    ({"tg_tfpath": "Barrack"}, ['--terragrunt-tfpath', 'Barrack']),
+    ({"tg_no_auto_init": True}, ['--terragrunt-no-auto-init']),
+    ({"tg_no_auto_init": False}, []),
+    ({"tg_no_auto_retry": True}, ['--terragrunt-no-auto-retry']),
+    ({"tg_no_auto_retry": False}, []),
+    ({"tg_non_interactive": True}, ['--terragrunt-non-interactive']),
+    ({"tg_non_interactive": False}, []),
+    ({"tg_working_dir": "George"}, ['--terragrunt-working-dir', 'George']),
+    ({"tg_download_dir": "Bush"}, ['--terragrunt-download-dir', 'Bush']),
+    ({"tg_source": "Clinton"}, ['--terragrunt-source', 'Clinton']),
+    ({"tg_source_update": True}, ['--terragrunt-source-update']),
+    ({"tg_source_update": False}, []),
+    ({"tg_iam_role": "Bill"}, ['--terragrunt-iam-role', 'Bill']),
+    ({"tg_ignore_dependency_errors": True}, ['--terragrunt-ignore-dependency-errors']),
+    ({"tg_ignore_dependency_errors": False}, []),
+    ({"tg_ignore_dependency_order": True}, ['--terragrunt-ignore-dependency-order']),
+    ({"tg_ignore_dependency_order": False}, []),
+    ({"tg_ignore_external_dependencies": "dont care what is here"},
+     ['--terragrunt-ignore-external-dependencies']),
+    ({"tg_include_external_dependencies": True}, ['--terragrunt-include-external-dependencies']),
+    ({"tg_include_external_dependencies": False}, []),
+    ({"tg_parallelism": 20}, ['terragrunt-parralism=20']),
+    ({"tg_exclude_dir": "Ronald"}, ['--terragrunt-exclude-dir', 'Ronald']),
+    ({"tg_include_dir": "Reagan"}, ['--terragrunt-include-dir', 'Reagan']),
+    ({"tg_check": True}, ['--terragrunt-check']),
+    ({"tg_check": False}, []),
+    ({"tg_hclfmt_file": "Biden"}, ['--terragrunt-hclfmt-file', 'Biden']),
+    ({"tg_override_attr": {"Iron": "Man", "Captain": "America"}},
+     ['--terragrunt-override-attr=Iron=Man', '--terragrunt-override-attr=Captain=America']),
+    ({"tg_debug": True}, ['--terragrunt-debug']),
+    ({"tg_debug": False}, []),
+
+]
+
+
+@pytest.mark.parametrize("kwargs, expected", TERRAGRUNT_ARGS_TESTCASES)
+def test_terragrunt_args(kwargs, expected):
+  assert tftest.parse_args(**kwargs) == expected
 
 
 def test_var_args():

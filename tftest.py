@@ -91,7 +91,7 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     cmd_args.append('--terragrunt-ignore-dependency-order')
   if kw.get('tg_ignore_external_dependencies'):
     cmd_args.append('--terragrunt-ignore-external-dependencies')
-  if kw.get('tg_include_external_dependencies') == False:
+  if kw.get('tg_include_external_dependencies') == True:
     cmd_args.append('--terragrunt-include-external-dependencies')
   if kw.get('tg_parallelism'):
     cmd_args.append('terragrunt-parralism={}'.format(kw['tg_parallelism']))
