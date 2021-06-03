@@ -16,5 +16,6 @@
 
 output "service_accounts" {
   description = "Service account emails."
+  sensitive   = true
   value       = module.service-account
 }
