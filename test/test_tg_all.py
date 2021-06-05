@@ -18,11 +18,60 @@ import tftest
 import os
 import sys
 
-@pytest.fixture
-def output(fixtures_dir):
-  tf = tftest.TerraformTest('tg_apply_all', fixtures_dir, binary='terragrunt')
-  tf.setup()
-  tf.tg_apply(all=True, output=False)
-  yield tf.tg_output(all=True)
 
-# TODO: Add output test
+@pytest.fixture
+def run_all_apply_out(fixtures_dir):
+  tg = tftest.TerragruntTest('tg_apply_all', fixtures_dir, tg_run_all=True)
+  tg.setup()
+  tg.apply(output=False, tg_non_interactive=True)
+  yield tg.output()
+  tg.destroy(auto_approve=True, tg_non_interactive=True)
+
+
+@pytest.fixture
+def run_all_plan_output(fixtures_dir):
+  tg = tftest.TerragruntTest('tg_apply_all', fixtures_dir, tg_run_all=True)
+  tg.setup()
+  return tg.plan(output=True, tg_working_dir=os.path.join(fixtures_dir, 'tg_apply_all'))
+
+
+@pytest.fixture
+def plan_foo_output(fixtures_dir):
+  tg = tftest.TerragruntTest(os.path.join('tg_apply_all', 'foo'), fixtures_dir)
+  tg.setup()
+  return tg.plan(output=True)
+
+
+@pytest.fixture
+def bar_output(fixtures_dir):
+  tg = tftest.TerragruntTest(os.path.join('tg_apply_all', 'bar'), fixtures_dir)
+  tg.setup()
+  tg.apply(output=False, tg_non_interactive=True)
+  yield tg.output()
+  tg.destroy(auto_approve=True, tg_non_interactive=True)
+
+
+def test_run_all_apply(run_all_apply_out):
+  triggers = [o["triggers"] for o in run_all_apply_out]
+  assert [{'name': 'foo', 'template': 'sample template foo'}] in triggers
+  assert [{'name': 'bar', 'template': 'sample template bar'}] in triggers
+  assert [{'name': 'one', 'template': 'sample template one'},
+          {'name': 'two', 'template': 'sample template two'}] in triggers
+  assert len(run_all_apply_out) == 3
+
+
+def test_tg_single_directory_apply(bar_output):
+  assert bar_output["triggers"] == [{'name': 'bar', 'template': 'sample template bar'}]
+
+
+def test_run_all_plan(run_all_plan_output):
+  for plan in run_all_plan_output:
+    assert plan.outputs['triggers'] == [{'name': 'one', 'template': 'sample template one'},
+                                        {'name': 'two', 'template': 'sample template two'}]
+    assert plan.variables['names'] == ['one', 'two']
+  assert len(run_all_plan_output) == 3
+
+
+def test_tg_single_directory_plan(plan_foo_output):
+  assert plan_foo_output.outputs['triggers'] == [{'name': 'foo', 'template': 'sample template foo'}]
+  assert plan_foo_output.variables['names'] == ['foo']
