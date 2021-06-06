@@ -279,7 +279,7 @@ class TerraformTest(object):
       relative to basedir.
     basedir: optional base directory to use for relative paths, defaults to the
       directory above the one this module lives in.
-    binary: path to the Terraform or terragrunt command.
+    binary: path to the Terraform command.
     env: a dict with custom environment variables to pass to terraform.
   """
 
@@ -296,7 +296,7 @@ class TerraformTest(object):
       self.env.update(env)
 
   @classmethod
-  def _cleanup(cls, tfdir, filenames, binary, deep=True):
+  def _cleanup(cls, tfdir, filenames, deep=True):
     """Remove linked files, .terraform and/or .terragrunt-cache folder at instance deletion."""
     _LOGGER.debug('cleaning up %s %s', tfdir, filenames)
     for filename in filenames:
@@ -493,9 +493,11 @@ def _parse_run_all_out(output: str, formatter: TerraformJSONBase) -> str:
   """
     run-all output a bunch of jsons back to back in one string(no comma),
     this convert the output to a valid json (put b2b jsons into a list)
-  :param output: the back to back jsons in a string
-  :param formatter: output format, could be TerraformValueDict or TerraformPlanOutput
-  :return: convert the input into a list that is a valid json
+  Args:
+    output: the back to back jsons in a string
+    formatter: output format, could be TerraformValueDict or TerraformPlanOutput
+  Returns:
+    convert the input into a list that is a valid json
   """
   dicts = json.loads("[" + re.sub(r"\}\s*\{", "}, {", output) + "]")
   return [formatter(d) for d in dicts]
@@ -504,7 +506,23 @@ def _parse_run_all_out(output: str, formatter: TerraformJSONBase) -> str:
 class TerragruntTest(TerraformTest):
 
   def __init__(self, tfdir, basedir=None, binary='terragrunt', env=None, tg_run_all=False):
-    """Set Terraform folder to operate on, and optional base directory."""
+    """A helper class that could be used for testing terragrunt
+
+    Most operations applies to :func:`~TerraformTest` also applies to this class
+    Notice that to us this class for terragrunt run-all, `tg_run_all` needs to be set to
+    True.  The class would then only be used solely for run-all.  If you need individual
+    terragrunt module testing, create another instance of this helper with
+    tg_run_all=False (default)
+
+    Args:
+      tfdir: the Terraform module directory to test, either an absolute path, or
+             relative to basedir.
+      basedir: optional base directory to use for relative paths, defaults to the
+               directory above the one this module lives in.
+      binary: (Optional) path to terragrunt command.
+      env: a dict with custom environment variables to pass to terraform.
+      tg_run_all: whether the test is for terragrunt run-all, default to False
+    """
     TerraformTest.__init__(self, tfdir, basedir, binary, env)
     self.tg_run_all = tg_run_all
     if self.tg_run_all:
