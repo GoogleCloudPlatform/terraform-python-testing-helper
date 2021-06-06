@@ -36,7 +36,7 @@ import re
 from functools import partial
 from typing import List
 
-__version__ = '1.5.6'
+__version__ = '1.5.7'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -299,8 +299,7 @@ class TerraformTest(object):
     _LOGGER.debug('cleaning up %s %s', tfdir, filenames)
     for filename in filenames:
       path = os.path.join(tfdir, filename)
-      if os.path.islink(path):
-        os.unlink(path)
+      os.unlink(path)
     if not deep:
       return
     path = os.path.join(tfdir, '.terraform')
@@ -344,12 +343,15 @@ class TerraformTest(object):
       if os.path.isfile(link_src):
         link_dst = os.path.join(self.tfdir, filename)
         try:
-          os.symlink(link_src, link_dst)
+          if os.name == 'nt':
+            shutil.copy(link_src, link_dst)
+          else:
+            os.symlink(link_src, link_dst)
+          filenames.append(filename)
         except FileExistsError as e:  # pylint:disable=undefined-variable
           _LOGGER.warning(e)
         else:
           _LOGGER.debug('linked %s', link_src)
-          filenames.append(filename)
       else:
         _LOGGER.warning('no such file {}'.format(link_src))
     self._finalizer = weakref.finalize(
@@ -385,6 +387,7 @@ class TerraformTest(object):
     if not output:
       return self.execute_command('plan', *cmd_args).out
     with tempfile.NamedTemporaryFile() as fp:
+      fp.close()
       cmd_args.append('-out={}'.format(fp.name))
       self.execute_command('plan', *cmd_args)
       result = self.execute_command('show', '-no-color', '-json', fp.name)

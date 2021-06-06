@@ -21,11 +21,14 @@ import tftest
 
 def test_setup_files():
   with tempfile.TemporaryDirectory() as tmpdir:
-    with tempfile.NamedTemporaryFile() as tmpfile:
-      tf = tftest.TerraformTest(tmpdir)
-      tf.setup(extra_files=[tmpfile.name])
-      assert os.path.exists(os.path.join(
+    try:
+      with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
+        tf = tftest.TerraformTest(tmpdir)
+        tf.setup(extra_files=[tmpfile.name])
+        assert os.path.exists(os.path.join(
           tmpdir, os.path.basename(tmpfile.name)))
-      tf = None
-      assert not os.path.exists(os.path.join(
+        tf = None
+        assert not os.path.exists(os.path.join(
           tmpdir, os.path.basename(tmpfile.name)))
+    finally:
+      os.unlink(tmpfile.name)
