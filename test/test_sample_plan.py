@@ -18,7 +18,7 @@ import pytest
 import tftest
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def plan(fixtures_dir):
   tf = tftest.TerraformTest('plan', fixtures_dir)
   tf.setup(extra_files=['plan.auto.tfvars'])

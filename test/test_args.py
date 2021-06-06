@@ -75,7 +75,7 @@ TERRAGRUNT_ARGS_TESTCASES = [
      ['--terragrunt-ignore-external-dependencies']),
     ({"tg_include_external_dependencies": True}, ['--terragrunt-include-external-dependencies']),
     ({"tg_include_external_dependencies": False}, []),
-    ({"tg_parallelism": 20}, ['terragrunt-parralism=20']),
+    ({"tg_parallelism": 20}, ['--terragrunt-parallelism 20']),
     ({"tg_exclude_dir": "Ronald"}, ['--terragrunt-exclude-dir', 'Ronald']),
     ({"tg_include_dir": "Reagan"}, ['--terragrunt-include-dir', 'Reagan']),
     ({"tg_check": True}, ['--terragrunt-check']),

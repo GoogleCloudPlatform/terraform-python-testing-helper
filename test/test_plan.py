@@ -18,7 +18,7 @@ import pytest
 import tftest
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def plan_out(fixtures_dir):
   import json
   with open('%s/plan_output.json' % fixtures_dir) as fp:

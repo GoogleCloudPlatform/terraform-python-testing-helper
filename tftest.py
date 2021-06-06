@@ -24,6 +24,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import collections
+
+import glob
 import itertools
 import json
 import logging
@@ -99,7 +101,7 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     if kw.get(f"tg_{arg}"):
       cmd_args += [f'--terragrunt-{arg.replace("_", "-")}', kw[f"tg_{arg}"]]
   if kw.get('tg_parallelism'):
-    cmd_args.append('terragrunt-parralism={}'.format(kw['tg_parallelism']))
+    cmd_args.append(f'--terragrunt-parallelism {kw["tg_parallelism"]}')
   if isinstance(kw.get('tg_override_attr'), dict):
     cmd_args += ['--terragrunt-override-attr={}={}'.format(k, v)
                  for k, v in kw.get('tg_override_attr').items()]
@@ -308,9 +310,10 @@ class TerraformTest(object):
     path = os.path.join(tfdir, 'terraform.tfstate')
     if os.path.isfile(path):
       os.unlink(path)
-    path = os.path.join(tfdir, '.terragrunt-cache')
-    if os.path.isdir(path):
-      shutil.rmtree(path)
+    path = os.path.join(tfdir, '**', '.terragrunt-cache*')
+    for tg_dir in glob.glob(path, recursive=True):
+      if os.path.isdir(tg_dir):
+        shutil.rmtree(tg_dir)
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
@@ -388,9 +391,12 @@ class TerraformTest(object):
       return self.execute_command('plan', *cmd_args).out
     with tempfile.NamedTemporaryFile() as fp:
       fp.close()
-      cmd_args.append('-out={}'.format(fp.name))
-      self.execute_command('plan', *cmd_args)
-      result = self.execute_command('show', '-no-color', '-json', fp.name)
+    # for tg we need to specify a temp name that is relative for the output to go into each
+    # of the .terragrunt-cache, then plan / show would work, otherwise it overwrites each other!
+    temp_file = fp.name if len(self._tg_ra()) == 0 else os.path.basename(fp.name)
+    cmd_args.append('-out={}'.format(temp_file))
+    self.execute_command('plan', *cmd_args)
+    result = self.execute_command('show', '-no-color', '-json', temp_file)
     try:
       return self._plan_formatter(result.out)
     except json.JSONDecodeError as e:

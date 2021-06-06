@@ -16,7 +16,6 @@ import pytest
 import tftest
 
 import os
-import sys
 
 
 @pytest.fixture
@@ -65,10 +64,11 @@ def test_tg_single_directory_apply(bar_output):
 
 
 def test_run_all_plan(run_all_plan_output):
-  for plan in run_all_plan_output:
-    assert plan.outputs['triggers'] == [{'name': 'one', 'template': 'sample template one'},
-                                        {'name': 'two', 'template': 'sample template two'}]
-    assert plan.variables['names'] == ['one', 'two']
+  triggers = [o.outputs["triggers"] for o in run_all_plan_output]
+  assert [{'name': 'foo', 'template': 'sample template foo'}] in triggers
+  assert [{'name': 'bar', 'template': 'sample template bar'}] in triggers
+  assert [{'name': 'one', 'template': 'sample template one'},
+          {'name': 'two', 'template': 'sample template two'}] in triggers
   assert len(run_all_plan_output) == 3
 
 
