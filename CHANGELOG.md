@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.7]
+
+- improve Windows support [#28]
+
+## [1.5.6]
+
+- retag 1.5.5 as 1.5.6
+
+## [1.5.5]
+
+- do not fail when `resource_changes` key is not present in output
+- this release has been skippe don pypi
+
 ## [1.5.4]
 
 - fix quoting in backend config args
