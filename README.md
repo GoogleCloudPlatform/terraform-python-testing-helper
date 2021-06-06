@@ -46,6 +46,36 @@ def test_modules(plan):
   assert res['values']['location'] == plan.variables['gcs_location']
 ```
 
+## Terragrunt support
+The test support for terragrunt actually follows same principle of terragrunt where it is a very thin wrapper of `TerraformTest`
+Please see the following example of how to use it:
+
+```python
+import pytest
+import tftest
+
+
+@pytest.fixture
+def run_all_apply_out(fixtures_dir):
+  # notice for run-all, you need to specify when TerragruntTest is constructed
+  tg = tftest.TerragruntTest('tg_apply_all', fixtures_dir, tg_run_all=True)
+  # rest are very similar to how you use TerraformTest
+  tg.setup()
+  # to use --terragrunt-<option>, pass in tg_<option in snake case>
+  tg.apply(output=False, tg_non_interactive=True)
+  yield tg.output()
+  tg.destroy(auto_approve=True, tg_non_interactive=True)
+
+  
+def test_run_all_apply(run_all_apply_out):
+    triggers = [o["triggers"] for o in run_all_apply_out]
+    assert [{'name': 'foo', 'template': 'sample template foo'}] in triggers
+    assert [{'name': 'bar', 'template': 'sample template bar'}] in triggers
+    assert [{'name': 'one', 'template': 'sample template one'},
+            {'name': 'two', 'template': 'sample template two'}] in triggers
+    assert len(run_all_apply_out) == 3
+```
+
 ## Compatibility
 
 Starting from version `1.0.0` Terraform `0.12` is required, and tests written with previous versions of this module are incompatible. Check the [`CHANGELOG.md`](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/blob/master/CHANGELOG.md) file for details on what's changed.
