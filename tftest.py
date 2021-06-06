@@ -358,7 +358,7 @@ class TerraformTest(object):
       else:
         _LOGGER.warning('no such file {}'.format(link_src))
     self._finalizer = weakref.finalize(
-        self, self._cleanup, self.tfdir, filenames, self.binary, deep=cleanup_on_exit)
+        self, self._cleanup, self.tfdir, filenames, deep=cleanup_on_exit)
     return self.init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend, **kw)
 
   def init(self, input=False, color=False, force_copy=False, plugin_dir=None,
