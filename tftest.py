@@ -38,7 +38,7 @@ import re
 from functools import partial
 from typing import List
 
-__version__ = '1.5.7'
+__version__ = '1.6.0'
 
 _LOGGER = logging.getLogger('tftest')
 
