@@ -47,8 +47,10 @@ def test_modules(plan):
 ```
 
 ## Terragrunt support
-The test support for terragrunt actually follows same principle of terragrunt where it is a very thin wrapper of `TerraformTest`
-Please see the following example of how to use it:
+
+Support for Terragrunt actually follows the same principle of the thin `TerraformTest` wrapper.
+
+Please see the following example for how to use it:
 
 ```python
 import pytest
@@ -59,7 +61,7 @@ import tftest
 def run_all_apply_out(fixtures_dir):
   # notice for run-all, you need to specify when TerragruntTest is constructed
   tg = tftest.TerragruntTest('tg_apply_all', fixtures_dir, tg_run_all=True)
-  # rest are very similar to how you use TerraformTest
+  # the rest is very similar to how you use TerraformTest
   tg.setup()
   # to use --terragrunt-<option>, pass in tg_<option in snake case>
   tg.apply(output=False, tg_non_interactive=True)
