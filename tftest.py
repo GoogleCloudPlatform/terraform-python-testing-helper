@@ -508,10 +508,10 @@ class TerragruntTest(TerraformTest):
   def __init__(self, tfdir, basedir=None, binary='terragrunt', env=None, tg_run_all=False):
     """A helper class that could be used for testing terragrunt
 
-    Most operations applies to :func:`~TerraformTest` also applies to this class
-    Notice that to us this class for terragrunt run-all, `tg_run_all` needs to be set to
-    True.  The class would then only be used solely for run-all.  If you need individual
-    terragrunt module testing, create another instance of this helper with
+    Most operations that apply to :func:`~TerraformTest` also apply to this class.
+    Notice that to use this class for Terragrunt run-all, `tg_run_all` needs to be set to
+    True.  The class would then only be used just for run-all.  If you need individual
+    Terragrunt module testing, create another instance of this helper with
     tg_run_all=False (default)
 
     Args:
