@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Terragrunt support (@davidtam) [#32]
+
 ## [1.5.7]
 
 - improve Windows support [#28]
