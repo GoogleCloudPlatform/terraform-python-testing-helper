@@ -6,7 +6,7 @@ It allows for different types of tests: lightweight tests that only use Terrafor
 
 As an additional convenience, the module also provides an easy way to request and access the plan output (via `terraform plan -out` and `terraform show`) and the outputs (via `terraform output -json`), and return them wrapped in simple classes that streamline accessing their attributes.
 
-This module is heavily inspired by two projects: [Terragrunt](https://github.com/gruntwork-io/terragrunt) for the lightweight approach to testing Terraform, and [python-terraform](https://github.com/beelit94/python-terraform) for wrapping the Terraform command in Python.
+This module is heavily inspired by two projects: [Terratest](https://github.com/gruntwork-io/terratest) for the lightweight approach to testing Terraform, and [python-terraform](https://github.com/beelit94/python-terraform) for wrapping the Terraform command in Python.
 
 ## Example Usage
 
@@ -44,6 +44,38 @@ def test_modules(plan):
   mod = plan.modules['module.gcs-buckets']
   res = mod.resources['google_storage_bucket.buckets[0]']
   assert res['values']['location'] == plan.variables['gcs_location']
+```
+
+## Terragrunt support
+
+Support for Terragrunt actually follows the same principle of the thin `TerraformTest` wrapper.
+
+Please see the following example for how to use it:
+
+```python
+import pytest
+import tftest
+
+
+@pytest.fixture
+def run_all_apply_out(fixtures_dir):
+  # notice for run-all, you need to specify when TerragruntTest is constructed
+  tg = tftest.TerragruntTest('tg_apply_all', fixtures_dir, tg_run_all=True)
+  # the rest is very similar to how you use TerraformTest
+  tg.setup()
+  # to use --terragrunt-<option>, pass in tg_<option in snake case>
+  tg.apply(output=False, tg_non_interactive=True)
+  yield tg.output()
+  tg.destroy(auto_approve=True, tg_non_interactive=True)
+
+  
+def test_run_all_apply(run_all_apply_out):
+    triggers = [o["triggers"] for o in run_all_apply_out]
+    assert [{'name': 'foo', 'template': 'sample template foo'}] in triggers
+    assert [{'name': 'bar', 'template': 'sample template bar'}] in triggers
+    assert [{'name': 'one', 'template': 'sample template one'},
+            {'name': 'two', 'template': 'sample template two'}] in triggers
+    assert len(run_all_apply_out) == 3
 ```
 
 ## Compatibility
