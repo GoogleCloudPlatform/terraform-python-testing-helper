@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Fix for read-only files on Windows during cleanup (@grahamhar). [#38]
+
 ## [1.6.0]
 
 - Terragrunt support (@davidtam) [#32]
