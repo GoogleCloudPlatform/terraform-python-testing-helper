@@ -31,6 +31,7 @@ import json
 import logging
 import os
 import shutil
+import stat
 import subprocess
 import tempfile
 import weakref
@@ -298,6 +299,12 @@ class TerraformTest(object):
   @classmethod
   def _cleanup(cls, tfdir, filenames, deep=True):
     """Remove linked files, .terraform and/or .terragrunt-cache folder at instance deletion."""
+
+    def remove_readonly(func, path, excinfo):
+      _LOGGER.warning(f'Issue deleting file {path}, caused by {excinfo}')
+      os.chmod(path, stat.S_IWRITE)
+      func(path)
+
     _LOGGER.debug('cleaning up %s %s', tfdir, filenames)
     for filename in filenames:
       path = os.path.join(tfdir, filename)
@@ -306,14 +313,14 @@ class TerraformTest(object):
       return
     path = os.path.join(tfdir, '.terraform')
     if os.path.isdir(path):
-      shutil.rmtree(path)
+      shutil.rmtree(path, onerror=remove_readonly)
     path = os.path.join(tfdir, 'terraform.tfstate')
     if os.path.isfile(path):
       os.unlink(path)
     path = os.path.join(tfdir, '**', '.terragrunt-cache*')
     for tg_dir in glob.glob(path, recursive=True):
       if os.path.isdir(tg_dir):
-        shutil.rmtree(tg_dir)
+        shutil.rmtree(tg_dir, onerror=remove_readonly)
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
