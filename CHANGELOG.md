@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Fix for read-only files on Windows during cleanup (@grahamhar). [#38]
+## [1.6.2]
+
+- Fix to return an empty map when no child modules are present in plan
+
+## [1.6.1]
+
+- Fix to read-only files on Windows during cleanup (@grahamhar). [#38]
 
 ## [1.6.0]
 
@@ -98,7 +104,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - remove the `teardown` method
   - unify the `plan` and `plan_out` methods
 
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.2...HEAD
+[1.6.2]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.1...v1.6.2
+[1.6.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.7...v1.6.0
 [1.5.7]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.6...v1.5.7
 [1.5.6]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.5...v1.5.6

@@ -39,7 +39,7 @@ import re
 from functools import partial
 from typing import List
 
-__version__ = '1.6.1'
+__version__ = '1.6.2'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -56,29 +56,29 @@ class TerraformTestError(Exception):
 
 
 _TG_BOOL_ARGS = [
-  "no_auto_init",
-  "no_auto_retry",
-  "source_update",
-  "ignore_dependency_errors",
-  "ignore_dependency_order",
-  "include_external_dependencies",
-  "check",
-  "debug",
-  'non_interactive',
-  'ignore_external_dependencies',
+    "no_auto_init",
+    "no_auto_retry",
+    "source_update",
+    "ignore_dependency_errors",
+    "ignore_dependency_order",
+    "include_external_dependencies",
+    "check",
+    "debug",
+    'non_interactive',
+    'ignore_external_dependencies',
 ]
 
 
 _TG_KV_ARGS = [
-  "iam_role",
-  "config",
-  "tfpath",
-  "working_dir",
-  "download_dir",
-  "source",
-  "exclude_dir",
-  "include_dir",
-  "hclfmt_file",
+    "iam_role",
+    "config",
+    "tfpath",
+    "working_dir",
+    "download_dir",
+    "source",
+    "exclude_dir",
+    "include_dir",
+    "hclfmt_file",
 ]
 
 
@@ -191,7 +191,7 @@ class TerraformPlanModule(TerraformJSONBase):
   def child_modules(self):
     if self._modules is None:
       self._modules = dict((mod['address'][self._strip:], TerraformPlanModule(
-          mod)) for mod in self._raw.get('child_modules'))
+          mod)) for mod in self._raw.get('child_modules', {}))
     return self._modules
 
   @property
@@ -400,7 +400,8 @@ class TerraformTest(object):
       fp.close()
     # for tg we need to specify a temp name that is relative for the output to go into each
     # of the .terragrunt-cache, then plan / show would work, otherwise it overwrites each other!
-    temp_file = fp.name if len(self._tg_ra()) == 0 else os.path.basename(fp.name)
+    temp_file = fp.name if len(
+        self._tg_ra()) == 0 else os.path.basename(fp.name)
     cmd_args.append('-out={}'.format(temp_file))
     self.execute_command('plan', *cmd_args)
     result = self.execute_command('show', '-no-color', '-json', temp_file)
@@ -533,5 +534,7 @@ class TerragruntTest(TerraformTest):
     TerraformTest.__init__(self, tfdir, basedir, binary, env)
     self.tg_run_all = tg_run_all
     if self.tg_run_all:
-      self._plan_formatter = partial(_parse_run_all_out, formatter=TerraformPlanOutput)
-      self._output_formatter = partial(_parse_run_all_out, formatter=TerraformValueDict)
+      self._plan_formatter = partial(
+          _parse_run_all_out, formatter=TerraformPlanOutput)
+      self._output_formatter = partial(
+          _parse_run_all_out, formatter=TerraformValueDict)
