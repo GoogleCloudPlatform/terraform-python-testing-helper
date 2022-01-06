@@ -125,6 +125,8 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     cmd_args += ['-plugin-dir', kw['plugin_dir']]
   if kw.get('refresh') is False:
     cmd_args.append('-refresh=false')
+  if kw.get('upgrade'):
+    cmd_args.append('-upgrade')
   if isinstance(init_vars, dict):
     cmd_args += ['-backend-config={}={}'.format(k, v)
                  for k, v in init_vars.items()]
