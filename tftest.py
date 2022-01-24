@@ -33,10 +33,12 @@ import os
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import weakref
 import re
 from functools import partial
+from pathlib import Path
 from typing import List
 
 __version__ = '1.6.3'
@@ -299,14 +301,13 @@ class TerraformTest(object):
       self.env.update(env)
 
   @classmethod
-  def _cleanup(cls, tfdir, filenames, deep=True):
+  def _cleanup(cls, tfdir, filenames, deep=True, restore_files=False):
     """Remove linked files, .terraform and/or .terragrunt-cache folder at instance deletion."""
 
     def remove_readonly(func, path, excinfo):
       _LOGGER.warning(f'Issue deleting file {path}, caused by {excinfo}')
       os.chmod(path, stat.S_IWRITE)
       func(path)
-
     _LOGGER.debug('cleaning up %s %s', tfdir, filenames)
     for filename in filenames:
       path = os.path.join(tfdir, filename)
@@ -323,13 +324,21 @@ class TerraformTest(object):
     for tg_dir in glob.glob(path, recursive=True):
       if os.path.isdir(tg_dir):
         shutil.rmtree(tg_dir, onerror=remove_readonly)
+    _LOGGER.debug('Restoring original TF files after prevent destroy changes')
+    if restore_files:
+      for bkp_file in Path(tfdir).rglob('*.bkp'):
+        try:
+          shutil.copy(str(bkp_file), f'{str(bkp_file).strip(".bkp")}')
+        except (IOError, OSError):
+          _LOGGER.exception(f'Unable to restore terraform file {bkp_file.resolve()}')
+          raise TerraformTestError(f'Restore of terraform file ({bkp_file.resolve()}) failed')
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
   def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
-            backend=True, cleanup_on_exit=True, **kw):
+            backend=True, cleanup_on_exit=True, disable_prevent_destroy=False, **kw):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -343,10 +352,33 @@ class TerraformTest(object):
       init_vars: Terraform backend configuration variables
       backend: Terraform backend argument
       cleanup_on_exit: remove .terraform and terraform.tfstate files on exit
+      disable_prevent_destroy: set all prevent destroy to false
 
     Returns:
       Terraform init output.
     """
+    # remove lifecycle prevent destroy
+    if disable_prevent_destroy:
+      min_python = (3, 5)
+      if sys.version_info < min_python:
+        raise TerraformTestError('The disable_prevent_destroy flag requires at least Python 3.5')
+      for tf_file in Path(self.tfdir).rglob('*.tf'):
+        try:
+          shutil.copy(str(tf_file), f'{str(tf_file)}.bkp')
+        # except (OSError, IOError) as exc:
+        except (OSError, IOError):
+          _LOGGER.exception(f'Unable to backup terraform file {tf_file.resolve()}')
+          raise TerraformTestError(f'Backup of terraform file ({tf_file.resolve()}) failed')
+        try:
+          with open(tf_file, 'r') as src:
+            terraform = src.read()
+          with open(tf_file, 'w') as src:
+            terraform = re.sub(r'prevent_destroy\s+=\s+true', 'prevent_destroy = false', terraform)
+            src.write(terraform)
+        except (OSError, IOError):
+          _LOGGER.exception(f'Unable to update prevent_destroy in file {tf_file.resolve()}')
+          raise TerraformTestError(f'Unable to update prevent_destroy in file ({tf_file.resolve()}) failed')
+
     # link extra files inside dir
     filenames = []
     for link_src in (extra_files or []):
@@ -367,7 +399,7 @@ class TerraformTest(object):
       else:
         _LOGGER.warning('no such file {}'.format(link_src))
     self._finalizer = weakref.finalize(
-        self, self._cleanup, self.tfdir, filenames, deep=cleanup_on_exit)
+        self, self._cleanup, self.tfdir, filenames, deep=cleanup_on_exit, restore_files=disable_prevent_destroy)
     return self.init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend, **kw)
 
   def init(self, input=False, color=False, force_copy=False, plugin_dir=None,
