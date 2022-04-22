@@ -500,27 +500,36 @@ class TerraformTest(object):
       _LOGGER.warning('error decoding state: {}'.format(e))
     return state
 
-  def execute_command(self, cmd, *cmd_args):
-    """Run arbitrary Terraform command."""
-    _LOGGER.debug([cmd, cmd_args])
-    cmdline = [self.binary, *self._tg_ra(), cmd]
-    cmdline += cmd_args
-    _LOGGER.info(cmdline)
-    try:
-      p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE, cwd=self.tfdir, env=self.env)
-    except FileNotFoundError as e:
-      raise TerraformTestError('Terraform executable not found: %s' % e)
-    out, err = p.communicate()
-    out = out.decode('utf-8', errors='ignore')
-    err = err.decode('utf-8', errors='ignore')
-    retcode = p.returncode
-    if retcode == 1:
-      message = 'Error running command {command}: {retcode} {out} {err}'.format(
-          command=cmd, retcode=retcode, out=out, err=err)
-      _LOGGER.critical(message)
-      raise TerraformTestError(message)
-    return TerraformCommandOutput(retcode, out, err)
+	def execute_command(self, cmd, *cmd_args):
+		"""Run arbitrary Terraform command."""
+		_LOGGER.debug([cmd, cmd_args])
+		cmdline = [self.binary, *self._tg_ra(), cmd]
+		cmdline += cmd_args
+		_LOGGER.info(cmdline)
+		retcode = None
+		full_output = ""
+		try:
+			p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
+													 stderr=subprocess.PIPE, cwd=self.tfdir, env=self.env, universal_newlines=True)
+			while True:
+					output = p.stdout.readline()
+					if output == '' and p.poll() is not None:
+							break
+					if output:
+							_LOGGER.info(output.strip())
+							full_output = full_output + output
+			retcode = p.poll()
+			p.stdout.close()
+			p.wait()
+		except FileNotFoundError as e:
+			raise TerraformTestError('Terraform executable not found: %s' % e)
+		out, err = p.communicate()
+		if retcode == 1:
+			message = 'Error running command {command}: {retcode} {out} {err}'.format(
+					command=cmd, retcode=retcode, out=full_output, err=err)
+			_LOGGER.critical(message)
+			raise TerraformTestError(message)
+		return TerraformCommandOutput(retcode, full_output, err)
 
   def _tg_ra(self) -> List[str]:
     """if run_all return ['run-all'] else [] """
