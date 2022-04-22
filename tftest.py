@@ -526,7 +526,7 @@ class TerraformTest(object):
     out, err = p.communicate()
     if retcode == 1:
       message = 'Error running command {command}: {retcode} {out} {err}'.format(
-        command=cmd, retcode=retcode, out=full_output, err=err)
+          command=cmd, retcode=retcode, out=full_output, err=err)
       _LOGGER.critical(message)
       raise TerraformTestError(message)
     return TerraformCommandOutput(retcode, full_output, err)
