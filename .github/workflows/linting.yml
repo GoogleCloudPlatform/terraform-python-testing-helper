@@ -46,7 +46,7 @@ jobs:
       - name: Check python formatting
         id: lint
         run: |
-          echo '[pep8]' > /pep8
-          echo 'indent-size = 2' >> /pep8
-          autopep8 --diff --global-config /pep8 --recursive \
+          echo '[pep8]' > pep8
+          echo 'indent-size = 2' >> pep8
+          autopep8 --diff --global-config pep8 --recursive \
            *.py test
