@@ -28,11 +28,13 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Set up Python
+        id: python-setup
         uses: actions/setup-python@v2
         with:
           python-version: "3.9"
 
       - name: Install dependencies
+        id: python-dependencies
         run: |
           pip install -r DEV-REQUIREMENTS.txt
 
@@ -42,6 +44,9 @@ jobs:
           python3 .github/workflows/scripts/check_boilerplate.py $GITHUB_WORKSPACE
 
       - name: Check python formatting
-        id: yapf
+        id: lint
         run: |
-          yapf --style="{based_on_style: google, indent_width: 2, SPLIT_BEFORE_NAMED_ASSIGNS: false}" -p -d *.py test/*py
+          echo '[pep8]' > /pep8
+          echo 'indent-size = 2' >> /pep8
+          autopep8 --diff --global-config /pep8 --recursive \
+           *.py test

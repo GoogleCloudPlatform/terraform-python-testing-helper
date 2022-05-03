@@ -36,30 +36,34 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Config auth
+        id: auth
         run: |
           echo '{"type": "service_account", "project_id": "test-only"}' \
             | tee -a $GOOGLE_APPLICATION_CREDENTIALS
 
       - name: Set up Python
+        id: python-setup
         uses: actions/setup-python@v2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Set up Terraform
+        id: tf-setup
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
       - name: Install Terragrunt
+        id: tg-setup
         run: |
           sudo wget -q -O /bin/terragrunt \
             https://github.com/gruntwork-io/terragrunt/releases/download/v${{ env.TG_VERSION }}/terragrunt_linux_amd64
           sudo chmod +x /bin/terragrunt
           terragrunt -v
 
-      - name: Run tests environments
-        id: pytest
+      - name: Run tests
+        id: python-test
         run: |
           mkdir -p ${{ env.TF_PLUGIN_CACHE_DIR }}
           pip install -r DEV-REQUIREMENTS.txt

@@ -69,13 +69,16 @@ TERRAGRUNT_ARGS_TESTCASES = [
     ({"tg_source_update": True}, ['--terragrunt-source-update']),
     ({"tg_source_update": False}, []),
     ({"tg_iam_role": "Bill"}, ['--terragrunt-iam-role', 'Bill']),
-    ({"tg_ignore_dependency_errors": True}, ['--terragrunt-ignore-dependency-errors']),
+    ({"tg_ignore_dependency_errors": True}, [
+     '--terragrunt-ignore-dependency-errors']),
     ({"tg_ignore_dependency_errors": False}, []),
-    ({"tg_ignore_dependency_order": True}, ['--terragrunt-ignore-dependency-order']),
+    ({"tg_ignore_dependency_order": True}, [
+     '--terragrunt-ignore-dependency-order']),
     ({"tg_ignore_dependency_order": False}, []),
     ({"tg_ignore_external_dependencies": "dont care what is here"},
      ['--terragrunt-ignore-external-dependencies']),
-    ({"tg_include_external_dependencies": True}, ['--terragrunt-include-external-dependencies']),
+    ({"tg_include_external_dependencies": True}, [
+     '--terragrunt-include-external-dependencies']),
     ({"tg_include_external_dependencies": False}, []),
     ({"tg_parallelism": 20}, ['--terragrunt-parallelism 20']),
     ({"tg_exclude_dir": "Ronald"}, ['--terragrunt-exclude-dir', 'Ronald']),
