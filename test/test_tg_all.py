@@ -60,7 +60,8 @@ def test_run_all_apply(run_all_apply_out):
 
 
 def test_tg_single_directory_apply(bar_output):
-  assert bar_output["triggers"] == [{'name': 'bar', 'template': 'sample template bar'}]
+  assert bar_output["triggers"] == [
+      {'name': 'bar', 'template': 'sample template bar'}]
 
 
 def test_run_all_plan(run_all_plan_output):
@@ -73,5 +74,6 @@ def test_run_all_plan(run_all_plan_output):
 
 
 def test_tg_single_directory_plan(plan_foo_output):
-  assert plan_foo_output.outputs['triggers'] == [{'name': 'foo', 'template': 'sample template foo'}]
+  assert plan_foo_output.outputs['triggers'] == [
+      {'name': 'foo', 'template': 'sample template foo'}]
   assert plan_foo_output.variables['names'] == ['foo']

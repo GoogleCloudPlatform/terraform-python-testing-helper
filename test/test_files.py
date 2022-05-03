@@ -26,9 +26,9 @@ def test_setup_files():
         tf = tftest.TerraformTest(tmpdir)
         tf.setup(extra_files=[tmpfile.name])
         assert os.path.exists(os.path.join(
-          tmpdir, os.path.basename(tmpfile.name)))
+            tmpdir, os.path.basename(tmpfile.name)))
         tf = None
         assert not os.path.exists(os.path.join(
-          tmpdir, os.path.basename(tmpfile.name)))
+            tmpdir, os.path.basename(tmpfile.name)))
     finally:
       os.unlink(tmpfile.name)
