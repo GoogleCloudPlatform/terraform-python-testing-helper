@@ -27,6 +27,7 @@ env:
   PYTHON_VERSION: 3.9
   TF_PLUGIN_CACHE_DIR: "/home/runner/.terraform.d/plugin-cache"
   TF_VERSION: 1.1.8
+  TG_VERSION: 0.36.9
 
 jobs:
   examples:
@@ -49,6 +50,13 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
+
+      - name: Install Terragrunt
+        run: |
+          sudo wget -q -O /bin/terragrunt \
+            https://github.com/gruntwork-io/terragrunt/releases/download/v${{ env.TG_VERSION }}/terragrunt_linux_amd64
+          sudo chmod +x /bin/terragrunt
+          terragrunt -v
 
       - name: Run tests environments
         id: pytest
