@@ -330,8 +330,10 @@ class TerraformTest(object):
         try:
           shutil.copy(str(bkp_file), f'{str(bkp_file).strip(".bkp")}')
         except (IOError, OSError):
-          _LOGGER.exception(f'Unable to restore terraform file {bkp_file.resolve()}')
-          raise TerraformTestError(f'Restore of terraform file ({bkp_file.resolve()}) failed')
+          _LOGGER.exception(
+              f'Unable to restore terraform file {bkp_file.resolve()}')
+          raise TerraformTestError(
+              f'Restore of terraform file ({bkp_file.resolve()}) failed')
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
@@ -361,23 +363,29 @@ class TerraformTest(object):
     if disable_prevent_destroy:
       min_python = (3, 5)
       if sys.version_info < min_python:
-        raise TerraformTestError('The disable_prevent_destroy flag requires at least Python 3.5')
+        raise TerraformTestError(
+            'The disable_prevent_destroy flag requires at least Python 3.5')
       for tf_file in Path(self.tfdir).rglob('*.tf'):
         try:
           shutil.copy(str(tf_file), f'{str(tf_file)}.bkp')
         # except (OSError, IOError) as exc:
         except (OSError, IOError):
-          _LOGGER.exception(f'Unable to backup terraform file {tf_file.resolve()}')
-          raise TerraformTestError(f'Backup of terraform file ({tf_file.resolve()}) failed')
+          _LOGGER.exception(
+              f'Unable to backup terraform file {tf_file.resolve()}')
+          raise TerraformTestError(
+              f'Backup of terraform file ({tf_file.resolve()}) failed')
         try:
           with open(tf_file, 'r') as src:
             terraform = src.read()
           with open(tf_file, 'w') as src:
-            terraform = re.sub(r'prevent_destroy\s+=\s+true', 'prevent_destroy = false', terraform)
+            terraform = re.sub(r'prevent_destroy\s+=\s+true',
+                               'prevent_destroy = false', terraform)
             src.write(terraform)
         except (OSError, IOError):
-          _LOGGER.exception(f'Unable to update prevent_destroy in file {tf_file.resolve()}')
-          raise TerraformTestError(f'Unable to update prevent_destroy in file ({tf_file.resolve()}) failed')
+          _LOGGER.exception(
+              f'Unable to update prevent_destroy in file {tf_file.resolve()}')
+          raise TerraformTestError(
+              f'Unable to update prevent_destroy in file ({tf_file.resolve()}) failed')
 
     # link extra files inside dir
     filenames = []
