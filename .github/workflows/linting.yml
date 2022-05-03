@@ -48,5 +48,5 @@ jobs:
         run: |
           echo '[pep8]' > pep8
           echo 'indent-size = 2' >> pep8
-          autopep8 --diff --global-config pep8 --recursive \
+          autopep8 --diff --global-config pep8 --recursive --exit-code \
            *.py test
