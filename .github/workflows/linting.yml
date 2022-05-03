@@ -36,6 +36,11 @@ jobs:
         run: |
           pip install -r DEV-REQUIREMENTS.txt
 
+      - name: Boilerplate
+        id: boilerplate
+        run: |
+          python3 .github/workflows/scripts/check_boilerplate.py $GITHUB_WORKSPACE
+
       - name: Check python formatting
         id: yapf
         run: |
