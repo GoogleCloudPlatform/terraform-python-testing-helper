@@ -102,7 +102,8 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
                for arg in _TG_BOOL_ARGS if kw.get(f"tg_{arg}")]
   for arg in _TG_KV_ARGS:
     if kw.get(f"tg_{arg}"):
-      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}', kw[f"tg_{arg}"]]
+      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}',
+                   kw[f"tg_{arg}"]]
   if kw.get('tg_parallelism'):
     cmd_args.append(f'--terragrunt-parallelism {kw["tg_parallelism"]}')
   if isinstance(kw.get('tg_override_attr'), dict):
@@ -296,7 +297,8 @@ class TerraformTest(object):
     self.env = os.environ.copy()
     self.tg_run_all = False
     self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
-    self._output_formatter = lambda out: TerraformValueDict(json.loads(out))
+    self._output_formatter = lambda out: TerraformValueDict(
+        json.loads(out))
     if env is not None:
       self.env.update(env)
 
@@ -324,11 +326,13 @@ class TerraformTest(object):
     for tg_dir in glob.glob(path, recursive=True):
       if os.path.isdir(tg_dir):
         shutil.rmtree(tg_dir, onerror=remove_readonly)
-    _LOGGER.debug('Restoring original TF files after prevent destroy changes')
+    _LOGGER.debug(
+        'Restoring original TF files after prevent destroy changes')
     if restore_files:
       for bkp_file in Path(tfdir).rglob('*.bkp'):
         try:
-          shutil.copy(str(bkp_file), f'{str(bkp_file).strip(".bkp")}')
+          shutil.copy(str(bkp_file),
+                      f'{str(bkp_file).strip(".bkp")}')
         except (IOError, OSError):
           _LOGGER.exception(
               f'Unable to restore terraform file {bkp_file.resolve()}')
@@ -378,8 +382,9 @@ class TerraformTest(object):
           with open(tf_file, 'r') as src:
             terraform = src.read()
           with open(tf_file, 'w') as src:
-            terraform = re.sub(r'prevent_destroy\s+=\s+true',
-                               'prevent_destroy = false', terraform)
+
+            terraform = re.sub(
+                r'prevent_destroy\s+=\s+true', 'prevent_destroy = false', terraform)
             src.write(terraform)
         except (OSError, IOError):
           _LOGGER.exception(
@@ -450,7 +455,8 @@ class TerraformTest(object):
     try:
       return self._plan_formatter(result.out)
     except json.JSONDecodeError as e:
-      raise TerraformTestError('Error decoding plan output: {}'.format(e))
+      raise TerraformTestError(
+          'Error decoding plan output: {}'.format(e))
 
   def apply(self, input=False, color=False, auto_approve=True,
             tf_vars=None, targets=None, tf_var_file=None, **kw):
@@ -515,23 +521,30 @@ class TerraformTest(object):
     cmdline += cmd_args
     _LOGGER.info(cmdline)
     retcode = None
-    full_output = ""
+    full_output_lines = []
     try:
-      p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE, cwd=self.tfdir, env=self.env, universal_newlines=True)
+      p = subprocess.Popen(cmdline,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE,
+                           cwd=self.tfdir,
+                           env=self.env,
+                           universal_newlines=True,
+                           encoding='utf-8',
+                           errors='ignore')
       while True:
         output = p.stdout.readline()
         if output == '' and p.poll() is not None:
-            break
+          break
         if output:
           _LOGGER.info(output.strip())
-          full_output = full_output + output
+          full_output_lines.append(output)
       retcode = p.poll()
       p.stdout.close()
       p.wait()
     except FileNotFoundError as e:
       raise TerraformTestError('Terraform executable not found: %s' % e)
     out, err = p.communicate()
+    full_output = "".join(full_output_lines)
     if retcode == 1:
       message = 'Error running command {command}: {retcode} {out} {err}'.format(
           command=cmd, retcode=retcode, out=full_output, err=err)
