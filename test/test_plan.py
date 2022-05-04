@@ -80,3 +80,9 @@ def test_plan_with_no_resources_succeeds(fixtures_dir):
   result = tf.plan(output=True)
 
   assert result.outputs['just_an_output'] == 'Hello, plan!'
+
+
+def test_plan_stdout(fixtures_dir):
+  tf = tftest.TerraformTest('plan_no_resource_changes', fixtures_dir)
+  result = tf.plan(output=False)
+  assert 'just_an_output = "Hello, plan!"' in result
