@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Log progressive output in commands (leighpascoe) [#45]
+
 ## [1.6.4]
 
 - Add ability to disable lifecycle prevent_destroy (grahamhar) [#43]
