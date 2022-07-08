@@ -37,3 +37,8 @@ def test_new_workspace(terraform_test):
 def test_select_workspace(terraform_test):
   tf_output = terraform_test.workspace(name="default")
   assert 'Switched to workspace "default"' in tf_output
+
+
+def test_setup_with_workspace(terraform_test):
+  tf_output = terraform_test.setup(workspace_name="setup_workspace")
+  assert 'Created and switched to workspace "setup_workspace"' in tf_output

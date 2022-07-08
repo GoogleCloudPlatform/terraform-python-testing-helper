@@ -344,7 +344,8 @@ class TerraformTest(object):
     return path if path.startswith('/') else os.path.join(self._basedir, path)
 
   def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
-            backend=True, cleanup_on_exit=True, disable_prevent_destroy=False, **kw):
+            backend=True, cleanup_on_exit=True, disable_prevent_destroy=False,
+             workspace_name=None, **kw):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -359,6 +360,7 @@ class TerraformTest(object):
       backend: Terraform backend argument
       cleanup_on_exit: remove .terraform and terraform.tfstate files on exit
       disable_prevent_destroy: set all prevent destroy to false
+      workspace_name: name of workspace to create or select
 
     Returns:
       Terraform init output.
@@ -413,7 +415,10 @@ class TerraformTest(object):
         _LOGGER.warning('no such file {}'.format(link_src))
     self._finalizer = weakref.finalize(
         self, self._cleanup, self.tfdir, filenames, deep=cleanup_on_exit, restore_files=disable_prevent_destroy)
-    return self.init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend, **kw)
+    setup_output = self.init(plugin_dir=plugin_dir, init_vars=init_vars, backend=backend, **kw)
+    if workspace_name:
+      setup_output += self.workspace(name=workspace_name)
+    return setup_output
 
   def init(self, input=False, color=False, force_copy=False, plugin_dir=None,
            init_vars=None, backend=True, **kw):
