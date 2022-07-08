@@ -423,6 +423,14 @@ class TerraformTest(object):
                           init_vars=init_vars, **kw)
     return self.execute_command('init', *cmd_args).out
 
+  def workspace(self, name=None):
+    """Run Terraform workspace command."""
+    raw_ws_out = self.execute_command('workspace', *['list']).out
+    cmd_args = ['select', name]
+    if name not in [ws.replace('*', '').strip() for ws in raw_ws_out.split('\n') if len(ws) > 0]:
+        cmd_args = ['new', name]
+    return self.execute_command('workspace', *cmd_args).out
+
   def plan(self, input=False, color=False, refresh=True, tf_vars=None,
            targets=None, output=False, tf_var_file=None, **kw):
     """
