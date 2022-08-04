@@ -2,129 +2,112 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [Unreleased]
 
-## [1.7.0]
+- [[#50](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/50)] Add command error to exception class, cleanup backup files ([ludoo](https://github.com/ludoo)) <!-- 2022-08-04 10:45:06+00:00 -->
+- [[#51](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/51)] Fix double close on Windows 10 ([sueastside](https://github.com/sueastside)) <!-- 2022-08-04 10:35:48+00:00 -->
+- [[#52](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/52)] Fix _abspath for windows ([sueastside](https://github.com/sueastside)) <!-- 2022-08-04 10:21:34+00:00 -->
 
-- Add support for Terraform workspaces (SplinterHead) [#48]
+## [1.7.0] - 2022-07-11
 
-## [1.6.5]
+- [[#48](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/48)] feat: Add support for Terraform workspaces ([SplinterHead](https://github.com/SplinterHead)) <!-- 2022-07-11 08:24:43+00:00 -->
 
-- Log progressive output in commands (leighpascoe) [#45]
+## [1.6.5] - 2022-05-04
 
-## [1.6.4]
+- [[#45](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/45)] Log output while Popen is in progress ([leighpascoe](https://github.com/leighpascoe)) <!-- 2022-05-04 13:46:56+00:00 -->
+- [[#47](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/47)] Add job names in workflows ([ludoo](https://github.com/ludoo)) <!-- 2022-05-03 17:49:30+00:00 -->
+- [[#46](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/46)] Switch to Github workflows ([ludoo](https://github.com/ludoo)) <!-- 2022-05-03 17:40:27+00:00 -->
 
-- Add ability to disable lifecycle prevent_destroy (grahamhar) [#43]
+## [1.6.4] - 2022-01-24
 
-## [1.6.3]
+- [[#43](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/43)] feat: Add ability to disable lifecycle prevent_destroy ([grahamhar](https://github.com/grahamhar)) <!-- 2022-01-24 10:09:31+00:00 -->
 
-- Adds support for the upgrade argument of the init command (@lorengordon) [#40]
+## [1.6.3] - 2022-01-06
 
-## [1.6.2]
+- [[#40](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/40)] Adds support for the upgrade argument of the init command ([lorengordon](https://github.com/lorengordon)) <!-- 2022-01-06 18:30:16+00:00 -->
 
-- Fix to return an empty map when no child modules are present in plan
+## [1.6.2] - 2021-12-31
 
-## [1.6.1]
+- [[#38](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/38)] fix: On windows if a file is read only the cleanup reports errors. ([grahamhar](https://github.com/grahamhar)) <!-- 2021-11-25 14:51:23+00:00 -->
 
-- Fix to read-only files on Windows during cleanup (@grahamhar). [#38]
+## [1.6.1] - 2021-11-25
 
-## [1.6.0]
+- [[#32](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/32)] Terragrunt support ([davidtam](https://github.com/davidtam)) <!-- 2021-06-07 22:16:39+00:00 -->
 
-- Terragrunt support (@davidtam) [#32]
+## [1.6.0] - 2021-06-08
 
-## [1.5.7]
+- [[#31](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/31)] Update CI to use Terraform 0.15 ([ludoo](https://github.com/ludoo)) <!-- 2021-06-03 06:00:32+00:00 -->
 
-- improve Windows support [#28]
+## [1.5.7] - 2021-06-02
 
-## [1.5.6]
+- [[#28](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/28)] Windows fixes ([andrewesweet](https://github.com/andrewesweet)) <!-- 2021-06-02 19:10:02+00:00 -->
 
-- retag 1.5.5 as 1.5.6
+## [1.5.6] - 2021-04-15
 
-## [1.5.5]
+- [[#27](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/27)] Don't fail when resource_changes key not present in output ([brownmike](https://github.com/brownmike)) <!-- 2021-04-15 05:23:26+00:00 -->
 
-- do not fail when `resource_changes` key is not present in output
-- this release has been skippe don pypi
+## [1.5.5] - 2021-04-15
 
-## [1.5.4]
+- [[#20](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/20)] Fix quoting in backend config args ([ludoo](https://github.com/ludoo)) <!-- 2020-11-26 16:20:21+00:00 -->
 
-- fix quoting in backend config args
+## [1.5.4] - 2020-11-26
 
-## [1.5.3]
+- [[#19](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/19)] New test to verify issue #17 ([ludoo](https://github.com/ludoo)) <!-- 2020-11-26 11:18:59+00:00 -->
 
-- allow customizing environment variables
+## [1.5.3] - 2020-11-07
 
-## [1.5.2]
+- [[#16](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/16)] Allow passing custom environment variables to terraform ([juliocc](https://github.com/juliocc)) <!-- 2020-11-07 16:44:33+00:00 -->
 
-- fix errors when plan has no variables
+## [1.5.2] - 2020-11-05
 
-## [1.5.1]
+- [[#15](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/15)] Accept plan outputs with no variables ([ludoo](https://github.com/ludoo)) <!-- 2020-11-05 16:48:22+00:00 -->
 
-- add support for `-var-file` flag
+## [1.5.1] - 2020-06-04
 
-## [1.5.0]
+- [[#12](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/12)] add support for target option ([stenh0use](https://github.com/stenh0use)) <!-- 2020-02-15 13:07:07+00:00 -->
 
-- add an option to allow the use of targeted resources using the `-target` flag
+## [1.5.0] - 2020-02-15
 
-## [1.4.1]
+- [[#11](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/11)] Fix errors on missing Terraform outputs ([ludoo](https://github.com/ludoo)) <!-- 2020-01-11 16:26:48+00:00 -->
 
-### Fixed
+## [1.4.1] - 2020-01-11
 
-- fix `KeyError` on plan output when no Terraform outputs have been defined (cf [#9] and [#10])
+- [[#8](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/8)] Add an option to leave terraform init data on exit ([ludoo](https://github.com/ludoo)) <!-- 2019-11-16 19:42:49+00:00 -->
 
-## [1.3.0]
+## [1.2.0] - 2019-11-05
 
-### Added
+- [[#4](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/4)] Refactor module and tests for v1.0.0 ([ludoo](https://github.com/ludoo)) <!-- 2019-10-30 06:19:34+00:00 -->
 
-- add an option to allow leaving `.terraform` and `terraform.state` in place on exit
+## [1.1.0] - 2019-11-05
 
-## [1.2.0]
+- [[#6](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/6)] Proxy raw dict attributes in TerraformValueDict ([ludoo](https://github.com/ludoo)) <!-- 2019-11-05 05:04:12+00:00 -->
+- [[#5](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/5)] Minimal fixes to v1.0.0 ([ludoo](https://github.com/ludoo)) <!-- 2019-10-30 06:37:13+00:00 -->
 
-### Added
+## [1.0.1] - 2019-10-30
 
-- proxy raw dict iter in `TerraformValueDict`
+- [[#2](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/2)] Add support for force-copy and refresh arguments ([ludoo](https://github.com/ludoo)) <!-- 2019-09-07 12:31:14+00:00 -->
 
-## [1.1.0]
+## [1.0.0] - 2019-10-30
 
-### Added
+<!-- 2019-10-30 06:21:04+00:00 < 2019-09-10 13:54:14+00:00 -->
 
-- proxy raw dict methods in `TerraformValueDict`
+- [[#4](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/4)] Refactor module and tests for v1.0.0 ([ludoo](https://github.com/ludoo)) <!-- 2019-10-30 06:19:34+00:00 -->
 
-## [1.0.1]
 
-### Changed
+## [0.6.2] - 2019-09-10
 
-- fix links and typos in README
+- [[#1](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/1)] remove tfstate ; add tf files to gitignore ([bastiandg](https://github.com/bastiandg)) <!-- 2019-03-29 08:13:06+00:00 -->
 
-## [1.0.0]
+## [0.6.0] - 2019-09-10
 
-### Added
 
-- support child modules in plan output
-- added support for `__contains__` in dict wrapper classes
-- add simple examples for plan and apply as fixtures
 
-### Changed
-
-- refactor plan output attributes (breaking change)
-- refactor state wrapper (breaking change)
-- refactor tests
-
-### Removed
-
-- refactor the module interface (breaking change)
-  - remove the ability to run commands implicitly in `setup`
-  - remove the `run_commands` method
-  - remove the `teardown` method
-  - unify the `plan` and `plan_out` methods
-
+<!-- markdown-link-check-disable -->
 [Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.0...HEAD
 [1.7.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.5...v1.7.0
 [1.6.5]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.4...v1.6.5
 [1.6.4]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.3...v1.6.4
-[1.6.3]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.1...v1.6.3
+[1.6.3]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.7...v1.6.0
@@ -136,9 +119,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.5.2]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.4.1...v1.5.0
-[1.4.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.3.0...v1.4.1
-[1.3.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.2.0...v1.3.0
+[1.4.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.2.0...v1.4.1
 [1.2.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v0.6.2...v1.0.0
+[0.6.2]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v0.6.0...v0.6.2
+[0.6.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v0.1...v0.6.0
