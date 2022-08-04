@@ -341,7 +341,7 @@ class TerraformTest(object):
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
-    return path if path.startswith('/') else os.path.join(self._basedir, path)
+    return path if os.path.isabs(path) else os.path.join(self._basedir, path)
 
   def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
             backend=True, cleanup_on_exit=True, disable_prevent_destroy=False,
