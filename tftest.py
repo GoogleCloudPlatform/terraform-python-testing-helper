@@ -553,7 +553,6 @@ class TerraformTest(object):
           _LOGGER.info(output.strip())
           full_output_lines.append(output)
       retcode = p.poll()
-      p.stdout.close()
       p.wait()
     except FileNotFoundError as e:
       raise TerraformTestError('Terraform executable not found: %s' % e)
