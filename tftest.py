@@ -54,7 +54,10 @@ TerraformStateResource = collections.namedtuple(
 
 
 class TerraformTestError(Exception):
-  pass
+
+  @property
+  def cmd_error(self):
+    return self.args[1] if len(self.args) > 1 else None
 
 
 _TG_BOOL_ARGS = [
@@ -338,6 +341,8 @@ class TerraformTest(object):
               f'Unable to restore terraform file {bkp_file.resolve()}')
           raise TerraformTestError(
               f'Restore of terraform file ({bkp_file.resolve()}) failed')
+        else:
+          bkp_file.unlink(True)
 
   def _abspath(self, path):
     """Make relative path absolute from base dir."""
@@ -384,7 +389,6 @@ class TerraformTest(object):
           with open(tf_file, 'r') as src:
             terraform = src.read()
           with open(tf_file, 'w') as src:
-
             terraform = re.sub(
                 r'prevent_destroy\s+=\s+true', 'prevent_destroy = false', terraform)
             src.write(terraform)
@@ -414,7 +418,8 @@ class TerraformTest(object):
       else:
         _LOGGER.warning('no such file {}'.format(link_src))
     self._finalizer = weakref.finalize(
-        self, self._cleanup, self.tfdir, filenames, deep=cleanup_on_exit, restore_files=disable_prevent_destroy)
+        self, self._cleanup, self.tfdir, filenames, deep=cleanup_on_exit,
+        restore_files=disable_prevent_destroy)
     setup_output = self.init(plugin_dir=plugin_dir,
                              init_vars=init_vars, backend=backend, **kw)
     if workspace_name:
@@ -563,7 +568,7 @@ class TerraformTest(object):
       message = 'Error running command {command}: {retcode} {out} {err}'.format(
           command=cmd, retcode=retcode, out=full_output, err=err)
       _LOGGER.critical(message)
-      raise TerraformTestError(message)
+      raise TerraformTestError(message, err)
     return TerraformCommandOutput(retcode, full_output, err)
 
   def _tg_ra(self) -> List[str]:
