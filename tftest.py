@@ -174,6 +174,9 @@ class TerraformValueDict(TerraformJSONBase):
     self.sensitive = tuple(k for k, v in raw.items() if v.get('sensitive'))
 
   def __getattr__(self, name):
+    if isinstance(name, str) and name[:2] == name[-2:] == '__':
+        # skip non-existing dunder method lookups
+        raise AttributeError(name)
     return getattr(self._raw, name)
 
   def __getitem__(self, name):
@@ -240,6 +243,12 @@ class TerraformPlanOutput(TerraformJSONBase):
 
   def __getattr__(self, name):
     return self._raw[name]
+  
+  def __getstate__(self):
+    return self.__dict__
+
+  def __setstate__(self, d):
+      self.__dict__.update(d)
 
 
 class TerraformState(TerraformJSONBase):
@@ -263,6 +272,12 @@ class TerraformState(TerraformJSONBase):
 
   def __getattr__(self, name):
     return self._raw[name]
+  
+  def __getstate__(self):
+    return self.__dict__
+
+  def __setstate__(self, d):
+      self.__dict__.update(d)
 
 
 class TerraformTest(object):
