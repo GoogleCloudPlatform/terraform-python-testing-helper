@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Simple Python wrapper for Terraform test fixtures.
 
 See documentation in the TerraformTest class for usage. Terraform wrapping
@@ -41,13 +40,12 @@ from functools import partial
 from pathlib import Path
 from typing import List
 
-__version__ = '1.7.1'
+__version__ = '1.7.2'
 
 _LOGGER = logging.getLogger('tftest')
 
-
-TerraformCommandOutput = collections.namedtuple(
-    'TerraformCommandOutput', 'retcode out err')
+TerraformCommandOutput = collections.namedtuple('TerraformCommandOutput',
+                                                'retcode out err')
 
 TerraformStateResource = collections.namedtuple(
     'TerraformStateResource', 'key provider type attributes depends_on raw')
@@ -72,7 +70,6 @@ _TG_BOOL_ARGS = [
     'non_interactive',
     'ignore_external_dependencies',
 ]
-
 
 _TG_KV_ARGS = [
     "iam_role",
@@ -101,17 +98,20 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   """
   cmd_args = []
 
-  cmd_args += [f'--terragrunt-{arg.replace("_", "-")}'
-               for arg in _TG_BOOL_ARGS if kw.get(f"tg_{arg}")]
+  cmd_args += [
+      f'--terragrunt-{arg.replace("_", "-")}' for arg in _TG_BOOL_ARGS
+      if kw.get(f"tg_{arg}")
+  ]
   for arg in _TG_KV_ARGS:
     if kw.get(f"tg_{arg}"):
-      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}',
-                   kw[f"tg_{arg}"]]
+      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}', kw[f"tg_{arg}"]]
   if kw.get('tg_parallelism'):
     cmd_args.append(f'--terragrunt-parallelism {kw["tg_parallelism"]}')
   if isinstance(kw.get('tg_override_attr'), dict):
-    cmd_args += ['--terragrunt-override-attr={}={}'.format(k, v)
-                 for k, v in kw.get('tg_override_attr').items()]
+    cmd_args += [
+        '--terragrunt-override-attr={}={}'.format(k, v)
+        for k, v in kw.get('tg_override_attr').items()
+    ]
 
   if kw.get('auto_approve'):
     cmd_args.append('-auto-approve')
@@ -134,14 +134,15 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   if kw.get('upgrade'):
     cmd_args.append('-upgrade')
   if isinstance(init_vars, dict):
-    cmd_args += ['-backend-config={}={}'.format(k, v)
-                 for k, v in init_vars.items()]
+    cmd_args += [
+        '-backend-config={}={}'.format(k, v) for k, v in init_vars.items()
+    ]
   elif isinstance(init_vars, str):
     cmd_args += ['-backend-config', '{}'.format(init_vars)]
   if tf_vars:
-    cmd_args += list(itertools.chain.from_iterable(
-        ("-var", "{}={}".format(k, v)) for k, v in tf_vars.items()
-    ))
+    cmd_args += list(
+        itertools.chain.from_iterable(
+            ("-var", "{}={}".format(k, v)) for k, v in tf_vars.items()))
   if targets:
     cmd_args += [("-target={}".format(t)) for t in targets]
   if kw.get('tf_var_file'):
@@ -201,8 +202,9 @@ class TerraformPlanModule(TerraformJSONBase):
   @property
   def child_modules(self):
     if self._modules is None:
-      self._modules = dict((mod['address'][self._strip:], TerraformPlanModule(
-          mod)) for mod in self._raw.get('child_modules', {}))
+      self._modules = dict(
+          (mod['address'][self._strip:], TerraformPlanModule(mod))
+          for mod in self._raw.get('child_modules', {}))
     return self._modules
 
   @property
@@ -225,11 +227,11 @@ class TerraformPlanOutput(TerraformJSONBase):
   def __init__(self, raw):
     super(TerraformPlanOutput, self).__init__(raw)
     planned_values = raw.get('planned_values', {})
-    self.root_module = TerraformPlanModule(
-        planned_values.get('root_module', {}))
+    self.root_module = TerraformPlanModule(planned_values.get(
+        'root_module', {}))
     self.outputs = TerraformValueDict(planned_values.get('outputs', {}))
-    self.resource_changes = dict((v['address'], v)
-                                 for v in self._raw.get('resource_changes', {}))
+    self.resource_changes = dict(
+        (v['address'], v) for v in self._raw.get('resource_changes', {}))
     # there might be no variables defined
     self.variables = TerraformValueDict(raw.get('variables', {}))
 
@@ -264,8 +266,8 @@ class TerraformState(TerraformJSONBase):
     if not self._resources:
       resources = {}
       for res in self._raw['resources']:
-        name = '%s.%s.%s' % (
-            res.get('module'), res.get('type'), res.get('name'))
+        name = '%s.%s.%s' % (res.get('module'), res.get('type'),
+                             res.get('name'))
         resources[name] = res
       self._resources = resources
     return self._resources
@@ -315,8 +317,7 @@ class TerraformTest(object):
     self.env = os.environ.copy()
     self.tg_run_all = False
     self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
-    self._output_formatter = lambda out: TerraformValueDict(
-        json.loads(out))
+    self._output_formatter = lambda out: TerraformValueDict(json.loads(out))
     if env is not None:
       self.env.update(env)
 
@@ -328,6 +329,7 @@ class TerraformTest(object):
       _LOGGER.warning(f'Issue deleting file {path}, caused by {excinfo}')
       os.chmod(path, stat.S_IWRITE)
       func(path)
+
     _LOGGER.debug('cleaning up %s %s', tfdir, filenames)
     for filename in filenames:
       path = os.path.join(tfdir, filename)
@@ -344,13 +346,11 @@ class TerraformTest(object):
     for tg_dir in glob.glob(path, recursive=True):
       if os.path.isdir(tg_dir):
         shutil.rmtree(tg_dir, onerror=remove_readonly)
-    _LOGGER.debug(
-        'Restoring original TF files after prevent destroy changes')
+    _LOGGER.debug('Restoring original TF files after prevent destroy changes')
     if restore_files:
       for bkp_file in Path(tfdir).rglob('*.bkp'):
         try:
-          shutil.copy(str(bkp_file),
-                      f'{str(bkp_file).strip(".bkp")}')
+          shutil.copy(str(bkp_file), f'{str(bkp_file).strip(".bkp")}')
         except (IOError, OSError):
           _LOGGER.exception(
               f'Unable to restore terraform file {bkp_file.resolve()}')
@@ -404,14 +404,15 @@ class TerraformTest(object):
           with open(tf_file, 'r') as src:
             terraform = src.read()
           with open(tf_file, 'w') as src:
-            terraform = re.sub(
-                r'prevent_destroy\s+=\s+true', 'prevent_destroy = false', terraform)
+            terraform = re.sub(r'prevent_destroy\s+=\s+true',
+                               'prevent_destroy = false', terraform)
             src.write(terraform)
         except (OSError, IOError):
           _LOGGER.exception(
               f'Unable to update prevent_destroy in file {tf_file.resolve()}')
           raise TerraformTestError(
-              f'Unable to update prevent_destroy in file ({tf_file.resolve()}) failed')
+              f'Unable to update prevent_destroy in file ({tf_file.resolve()}) failed'
+          )
 
     # link extra files inside dir
     filenames = []
@@ -432,11 +433,11 @@ class TerraformTest(object):
           _LOGGER.debug('linked %s', link_src)
       else:
         _LOGGER.warning('no such file {}'.format(link_src))
-    self._finalizer = weakref.finalize(
-        self, self._cleanup, self.tfdir, filenames, deep=cleanup_on_exit,
-        restore_files=disable_prevent_destroy)
-    setup_output = self.init(plugin_dir=plugin_dir,
-                             init_vars=init_vars, backend=backend, **kw)
+    self._finalizer = weakref.finalize(self, self._cleanup, self.tfdir,
+                                       filenames, deep=cleanup_on_exit,
+                                       restore_files=disable_prevent_destroy)
+    setup_output = self.init(plugin_dir=plugin_dir, init_vars=init_vars,
+                             backend=backend, **kw)
     if workspace_name:
       setup_output += self.workspace(name=workspace_name)
     return setup_output
@@ -453,7 +454,11 @@ class TerraformTest(object):
     """Run Terraform workspace command."""
     raw_ws_out = self.execute_command('workspace', *['list']).out
     cmd_args = ['select', name]
-    if name not in [ws.replace('*', '').strip() for ws in raw_ws_out.split('\n') if len(ws) > 0]:
+    if name not in [
+        ws.replace('*', '').strip()
+        for ws in raw_ws_out.split('\n')
+        if len(ws) > 0
+    ]:
       cmd_args = ['new', name]
     return self.execute_command('workspace', *cmd_args).out
 
@@ -472,28 +477,27 @@ class TerraformTest(object):
       output: Determines if output will be returned.
       tf_var_file: Path to terraform variable configuration file relative to `self.tfdir`.
     """
-    cmd_args = parse_args(input=input, color=color,
-                          refresh=refresh, tf_vars=tf_vars,
-                          targets=targets,  tf_var_file=tf_var_file, **kw)
+    cmd_args = parse_args(input=input, color=color, refresh=refresh,
+                          tf_vars=tf_vars, targets=targets,
+                          tf_var_file=tf_var_file, **kw)
     if not output:
       return self.execute_command('plan', *cmd_args).out
     with tempfile.NamedTemporaryFile() as fp:
       fp.close()
     # for tg we need to specify a temp name that is relative for the output to go into each
     # of the .terragrunt-cache, then plan / show would work, otherwise it overwrites each other!
-    temp_file = fp.name if len(
-        self._tg_ra()) == 0 else os.path.basename(fp.name)
+    temp_file = fp.name if len(self._tg_ra()) == 0 else os.path.basename(
+        fp.name)
     cmd_args.append('-out={}'.format(temp_file))
     self.execute_command('plan', *cmd_args)
     result = self.execute_command('show', '-no-color', '-json', temp_file)
     try:
       return self._plan_formatter(result.out)
     except json.JSONDecodeError as e:
-      raise TerraformTestError(
-          'Error decoding plan output: {}'.format(e))
+      raise TerraformTestError('Error decoding plan output: {}'.format(e))
 
-  def apply(self, input=False, color=False, auto_approve=True,
-            tf_vars=None, targets=None, tf_var_file=None, **kw):
+  def apply(self, input=False, color=False, auto_approve=True, tf_vars=None,
+            targets=None, tf_var_file=None, **kw):
     """
     Run Terraform apply command.
 
@@ -506,9 +510,9 @@ class TerraformTest(object):
         and its dependencies
       tf_var_file: Path to terraform variable configuration file relative to `self.tfdir`.
     """
-    cmd_args = parse_args(input=input, color=color,
-                          auto_approve=auto_approve, tf_vars=tf_vars,
-                          targets=targets, tf_var_file=tf_var_file, **kw)
+    cmd_args = parse_args(input=input, color=color, auto_approve=auto_approve,
+                          tf_vars=tf_vars, targets=targets,
+                          tf_var_file=tf_var_file, **kw)
     return self.execute_command('apply', *cmd_args).out
 
   def output(self, name=None, color=False, json_format=True, **kw):
@@ -526,17 +530,18 @@ class TerraformTest(object):
         _LOGGER.warning('error decoding output: {}'.format(e))
     return output
 
-  def destroy(self, color=False, auto_approve=True, tf_vars=None, targets=None, tf_var_file=None,  **kw):
+  def destroy(self, color=False, auto_approve=True, tf_vars=None, targets=None,
+              tf_var_file=None, **kw):
     """Run Terraform destroy command."""
     cmd_args = parse_args(color=color, auto_approve=auto_approve,
                           tf_vars=tf_vars, targets=targets,
-                          tf_var_file=tf_var_file,  **kw)
+                          tf_var_file=tf_var_file, **kw)
     return self.execute_command('destroy', *cmd_args).out
 
-  def refresh(self, color=False, lock=False, tf_vars=None, targets=None,  **kw):
+  def refresh(self, color=False, lock=False, tf_vars=None, targets=None, **kw):
     """Run Terraform refresh command."""
-    cmd_args = parse_args(color=color, lock=lock,
-                          tf_vars=tf_vars, targets=targets,  **kw)
+    cmd_args = parse_args(color=color, lock=lock, tf_vars=tf_vars,
+                          targets=targets, **kw)
     return self.execute_command('refresh', *cmd_args).out
 
   def state_pull(self):
@@ -557,13 +562,9 @@ class TerraformTest(object):
     retcode = None
     full_output_lines = []
     try:
-      p = subprocess.Popen(cmdline,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE,
-                           cwd=self.tfdir,
-                           env=self.env,
-                           universal_newlines=True,
-                           encoding='utf-8',
+      p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE, cwd=self.tfdir, env=self.env,
+                           universal_newlines=True, encoding='utf-8',
                            errors='ignore')
       while True:
         output = p.stdout.readline()
@@ -610,7 +611,8 @@ def _parse_run_all_out(output: str, formatter: TerraformJSONBase) -> str:
 
 class TerragruntTest(TerraformTest):
 
-  def __init__(self, tfdir, basedir=None, binary='terragrunt', env=None, tg_run_all=False):
+  def __init__(self, tfdir, basedir=None, binary='terragrunt', env=None,
+               tg_run_all=False):
     """A helper class that could be used for testing terragrunt
 
     Most operations that apply to :func:`~TerraformTest` also apply to this class.
@@ -631,7 +633,7 @@ class TerragruntTest(TerraformTest):
     TerraformTest.__init__(self, tfdir, basedir, binary, env)
     self.tg_run_all = tg_run_all
     if self.tg_run_all:
-      self._plan_formatter = partial(
-          _parse_run_all_out, formatter=TerraformPlanOutput)
-      self._output_formatter = partial(
-          _parse_run_all_out, formatter=TerraformValueDict)
+      self._plan_formatter = partial(_parse_run_all_out,
+                                     formatter=TerraformPlanOutput)
+      self._output_formatter = partial(_parse_run_all_out,
+                                       formatter=TerraformValueDict)
