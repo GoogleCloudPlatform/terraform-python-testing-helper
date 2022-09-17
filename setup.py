@@ -35,7 +35,9 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
+        "Framework :: Pytest",
     ],
     setup_requires=['nose>=1.3'],
-    test_suite='nose.collector'
+    test_suite='nose.collector',
+    entry_points={"pytest11": ["tftest = tftest_fixt"]},
 )
