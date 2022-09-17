@@ -1,10 +1,13 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+<!-- markdownlint-disable MD024 -->
 
 ## [Unreleased]
 
 <!-- None < 2022-08-04 11:44:18+00:00 -->
+
+- [[#56](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/56)] add ability to pickle tftest instance objects ([marshall7m](https://github.com/marshall7m)) <!-- 2022-09-15 05:22:57+00:00 -->
 
 ## [1.7.1] - 2022-08-04
 
