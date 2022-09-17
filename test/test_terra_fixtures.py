@@ -41,23 +41,20 @@ def test_terra_param(terra):
 """
 
 
-@patch("tftest.TerraformTest.destroy")
-def test_kwargs(mock_destroy, pytester):
-  """Ensure all kwargs are supported"""
+def test_terra_kwargs(pytester):
+  """Ensure all kwargs are supported and fixture is parametrizable"""
   params = [
       {
           "binary": "terraform",
           "basedir": "/fixture",
           "tfdir": "bar",
           "env": {},
-          "skip_teardown": False,
       },
       {
           "binary": "terragrunt",
           "basedir": "/fixture",
           "tfdir": "bar",
           "env": {},
-          "skip_teardown": False,
           "tg_run_all": True,
       },
   ]
@@ -65,64 +62,6 @@ def test_kwargs(mock_destroy, pytester):
   reprec = pytester.inline_run()
 
   reprec.assertoutcome(passed=len(params))
-
-
-@patch("tftest.TerraformTest.destroy")
-def test_skip_teardown_param(mock_destroy, pytester):
-  """Ensure skip_teardown param attribute is implemented"""
-  params = [
-      {
-          "binary": "terraform",
-          "tfdir": "foo",
-          "skip_teardown": True,
-      },
-      {
-          "binary": "terragrunt",
-          "tfdir": "foo",
-          "skip_teardown": True,
-      },
-  ]
-  pytester.makepyfile(basic_terra_py.format(params))
-  reprec = pytester.inline_run()
-
-  reprec.assertoutcome(passed=len(params))
-  assert mock_destroy.call_args_list == []
-
-
-@patch("tftest.TerraformTest.destroy")
-def test_skip_teardown_flag(mock_destroy, pytester):
-  """Ensure that the --skip-tf-destroy flag is implemented"""
-
-  pytester.makepyfile(
-      basic_terra_py.format(
-          [
-              {
-                  "binary": "terraform",
-                  "tfdir": "foo",
-                  "skip_teardown": True,
-              },
-              {
-                  "binary": "terraform",
-                  "tfdir": "foo",
-                  "skip_teardown": False,
-              },
-              {
-                  "binary": "terragrunt",
-                  "tfdir": "foo",
-                  "skip_teardown": True,
-              },
-              {
-                  "binary": "terragrunt",
-                  "tfdir": "foo",
-                  "skip_teardown": False,
-              },
-          ]
-      )
-  )
-  pytester.inline_run("--skip-teardown=true")
-
-  log.info("Assert that terraform destroy command was not called")
-  assert mock_destroy.call_args_list == []
 
 
 # asserts tftest.TerraformTest method outputs are returned
@@ -229,6 +168,7 @@ def test_terra_fixt_with_cache(pytester):
           ]
       )
   )
+
   # --cache-clear removes .pytest_cache cache files
   reprec = pytester.inline_run("--cache-clear")
   reprec.assertoutcome(passed=sum(reprec.countoutcomes()))

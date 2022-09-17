@@ -21,39 +21,15 @@ from hashlib import sha1
 
 _LOGGER = logging.getLogger('tftest')
 
-terra_kwargs = ["skip_teardown"]
-
-
-def pytest_addoption(parser):
-  parser.addoption(
-      "--skip-teardown",
-      action="store",
-      help="skips teardown for every `terra` fixture",
-  )
-
 
 @pytest.fixture(scope="session")
 def terra(request):
-  tftest_kwargs = {
-      key: value for key, value in request.param.items() if key not in terra_kwargs
-  }
   if request.param["binary"].endswith("terraform"):
-    terra_cls = tftest.TerraformTest(**tftest_kwargs)
+    terra_cls = tftest.TerraformTest(**request.param)
   elif request.param["binary"].endswith("terragrunt"):
-    terra_cls = tftest.TerragruntTest(**tftest_kwargs)
+    terra_cls = tftest.TerragruntTest(**request.param)
 
-  yield terra_cls
-
-  if request.config.getoption("skip_teardown") is not None:
-    skip = request.config.getoption("skip_teardown") == "true"
-  else:
-    skip = request.param.get("skip_teardown", False)
-
-  if skip:
-    _LOGGER.info(f"Skipping teardown for {terra_cls.tfdir}")
-  else:
-    _LOGGER.info(f"Tearing down: {terra_cls.tfdir}")
-    terra_cls.destroy(auto_approve=True)
+  return terra_cls
 
 
 def _execute_command(request, terra, cmd):
