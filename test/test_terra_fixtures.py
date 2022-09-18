@@ -47,8 +47,8 @@ def base_tester(pytester):
   pytester.makeconftest(
       """
         import sys
-        if "tftest" not in sys.modules:
-            pytest_plugins = "tftest"
+        if "tftest_fixt" not in sys.modules:
+            pytest_plugins = "tftest_fixt"
     """
   )
   return pytester
