@@ -14,6 +14,7 @@
 
 import logging
 import os
+import pytest
 from unittest.mock import patch
 
 pytest_plugins = [
@@ -41,7 +42,19 @@ def test_terra_param(terra):
 """
 
 
-def test_terra_kwargs(pytester):
+@pytest.fixture
+def base_tester(pytester):
+  pytester.makeconftest(
+      """
+        import sys
+        if "tftest" not in sys.modules:
+            pytest_plugins = "tftest"
+    """
+  )
+  return pytester
+
+
+def test_terra_kwargs(base_tester):
   """Ensure all kwargs are supported and fixture is parametrizable"""
   params = [
       {
@@ -58,8 +71,8 @@ def test_terra_kwargs(pytester):
           "tg_run_all": True,
       },
   ]
-  pytester.makepyfile(basic_terra_py.format(params))
-  reprec = pytester.inline_run()
+  base_tester.makepyfile(basic_terra_py.format(params))
+  reprec = base_tester.inline_run()
 
   reprec.assertoutcome(passed=len(params))
 
@@ -130,9 +143,9 @@ class TestTerraCommands:
 """
 
 
-def test_terra_fixt_without_cache(pytester):
+def test_terra_fixt_without_cache(base_tester):
   """Ensure terra command fixtures run without error"""
-  pytester.makepyfile(
+  base_tester.makepyfile(
       test_without_cache_file.format(
           terra_param=[
               {
@@ -147,14 +160,14 @@ def test_terra_fixt_without_cache(pytester):
       )
   )
   log.info("Running test file without cache")
-  reprec = pytester.inline_run("--cache-clear")
+  reprec = base_tester.inline_run("--cache-clear")
   reprec.assertoutcome(passed=sum(reprec.countoutcomes()))
 
 
-def test_terra_fixt_with_cache(pytester):
+def test_terra_fixt_with_cache(base_tester):
   """Ensure cache is used for subsequent pytest session"""
   log.info("Running test file without cache")
-  pytester.makepyfile(
+  base_tester.makepyfile(
       test_without_cache_file.format(
           terra_param=[
               {
@@ -170,11 +183,11 @@ def test_terra_fixt_with_cache(pytester):
   )
 
   # --cache-clear removes .pytest_cache cache files
-  reprec = pytester.inline_run("--cache-clear")
+  reprec = base_tester.inline_run("--cache-clear")
   reprec.assertoutcome(passed=sum(reprec.countoutcomes()))
 
   log.info("Running test file with cache")
-  pytester.makepyfile(
+  base_tester.makepyfile(
       test_with_cache_file.format(
           terra_param=[
               {
@@ -188,5 +201,5 @@ def test_terra_fixt_with_cache(pytester):
           ]
       )
   )
-  reprec = pytester.inline_run()
+  reprec = base_tester.inline_run()
   reprec.assertoutcome(passed=sum(reprec.countoutcomes()))
