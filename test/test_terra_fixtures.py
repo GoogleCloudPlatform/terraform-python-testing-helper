@@ -206,13 +206,14 @@ def test_terra_fixt_with_cache(base_tester):
   reprec = base_tester.inline_run()
   reprec.assertoutcome(passed=sum(reprec.countoutcomes()))
 
+
 @patch("tftest.TerraformTest.plan", return_value=tftest.TerraformPlanOutput)
 def test_subsequent_calls_use_cache(mock_plan, base_tester):
-    """
-    Ensures that the initial terra_plan fixture call uses the plan method
-    and subsequent calls use the cache value within the same pytest session
-    """
-    test_file = """
+  """
+  Ensures that the initial terra_plan fixture call uses the plan method
+  and subsequent calls use the cache value within the same pytest session
+  """
+  test_file = """
     import tftest
     import pytest
     import os
@@ -231,17 +232,17 @@ def test_subsequent_calls_use_cache(mock_plan, base_tester):
         assert type(terra_plan) == tftest.TerraformPlanOutput
     """
 
-    base_tester.makepyfile(
+  base_tester.makepyfile(
       test_file.format(
           terra_param=[
-            {
-                "binary": "terraform",
-                "tfdir": os.path.dirname(__file__) + "/fixtures/plan_no_resource_changes",
-            }
+              {
+                  "binary": "terraform",
+                  "tfdir": os.path.dirname(__file__) + "/fixtures/plan_no_resource_changes",
+              }
           ]
       )
-    )
+  )
 
-    # --cache-clear removes .pytest_cache cache files
-    base_tester.inline_run("--cache-clear")
-    assert mock_plan.call_count == 1
+  # --cache-clear removes .pytest_cache cache files
+  base_tester.inline_run("--cache-clear")
+  assert mock_plan.call_count == 1
