@@ -18,12 +18,20 @@ import logging
 import json
 import pickle
 from hashlib import sha1
+from typing import Any, Union
 
 _LOGGER = logging.getLogger('tftest')
 
 
 @pytest.fixture(scope="session")
-def terra(request):
+def terra(request: pytest.FixtureRequest) -> Union[tftest.TerraformTest, tftest.TerragruntTest]:
+  """
+  Pytest fixture for parametrized tftest instances
+  Args:
+    request: pytest request fixture
+  Yields:
+    Parametrized tftest instance
+  """
   if request.param["binary"].endswith("terraform"):
     terra_cls = tftest.TerraformTest(**request.param)
   elif request.param["binary"].endswith("terragrunt"):
@@ -32,7 +40,16 @@ def terra(request):
   return terra_cls
 
 
-def _execute_command(request, terra, cmd):
+def _execute_command(request: pytest.FixtureRequest, terra: Union[tftest.TerraformTest, tftest.TerragruntTest], cmd: str) -> Any:
+  """
+  Runs the tftest instance method if not present within .pytest_cache
+  Args:
+      request: pytest request fixture
+      terra: terra fixture's tftest instance (depends on binary attribute)
+      cmd: tftest instance method to execute
+  Returns:
+      Output of the tftest instance method
+  """
   cmd_kwargs = getattr(request, "param", {}).get(
       terra.tfdir, getattr(request, "param", {})
   )
@@ -69,20 +86,24 @@ def _execute_command(request, terra, cmd):
 
 
 @pytest.fixture(scope="session")
-def terra_setup(terra, request):
+def terra_setup(terra: Union[tftest.TerraformTest, tftest.TerragruntTest], request: pytest.FixtureRequest) -> str:
+  """Returns the output of the tftest instance's setup() method"""
   return _execute_command(request, terra, "setup")
 
 
 @pytest.fixture(scope="session")
-def terra_plan(terra_setup, terra, request):
+def terra_plan(terra_setup: str, terra: Union[tftest.TerraformTest, tftest.TerragruntTest], request: pytest.FixtureRequest) -> tftest.TerraformPlanOutput:
+  """Returns the output of the tftest instance's plan() method"""
   return _execute_command(request, terra, "plan")
 
 
 @pytest.fixture(scope="session")
-def terra_apply(terra_setup, terra, request):
+def terra_apply(terra_setup: str, terra: Union[tftest.TerraformTest, tftest.TerragruntTest], request: pytest.FixtureRequest) -> str:
+  """Returns the output of the tftest instance's apply() method"""
   return _execute_command(request, terra, "apply")
 
 
 @pytest.fixture(scope="session")
-def terra_output(terra, request):
+def terra_output(terra: Union[tftest.TerraformTest, tftest.TerragruntTest], request: pytest.FixtureRequest) -> tftest.TerraformValueDict:
+  """Returns the output of the tftest instance's output() method"""
   return _execute_command(request, terra, "output")
