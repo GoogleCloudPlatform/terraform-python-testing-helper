@@ -15,6 +15,7 @@
 import logging
 import os
 import pytest
+import tftest
 from unittest.mock import patch
 
 pytest_plugins = [
@@ -44,6 +45,7 @@ def test_terra_param(terra):
 
 @pytest.fixture
 def base_tester(pytester):
+  """Creates conftest.py file that will be used within the testing pytest session"""
   pytester.makeconftest(
       """
         import sys
@@ -203,3 +205,43 @@ def test_terra_fixt_with_cache(base_tester):
   )
   reprec = base_tester.inline_run()
   reprec.assertoutcome(passed=sum(reprec.countoutcomes()))
+
+@patch("tftest.TerraformTest.plan", return_value=tftest.TerraformPlanOutput)
+def test_subsequent_calls_use_cache(mock_plan, base_tester):
+    """
+    Ensures that the initial terra_plan fixture call uses the plan method
+    and subsequent calls use the cache value within the same pytest session
+    """
+    test_file = """
+    import tftest
+    import pytest
+    import os
+    from unittest.mock import patch, call
+
+    def pytest_generate_tests(metafunc):
+        metafunc.parametrize("terra",{terra_param},indirect=True,)
+        metafunc.parametrize("terra_plan", [{{"output": True}}], indirect=True)
+
+    @pytest.mark.usefixtures("terra")
+    def test_runs_command(terra_plan):
+        assert type(terra_plan) == tftest.TerraformPlanOutput
+
+    @pytest.mark.usefixtures("terra")
+    def test_uses_cache(terra_plan):
+        assert type(terra_plan) == tftest.TerraformPlanOutput
+    """
+
+    base_tester.makepyfile(
+      test_file.format(
+          terra_param=[
+            {
+                "binary": "terraform",
+                "tfdir": os.path.dirname(__file__) + "/fixtures/plan_no_resource_changes",
+            }
+          ]
+      )
+    )
+
+    # --cache-clear removes .pytest_cache cache files
+    base_tester.inline_run("--cache-clear")
+    assert mock_plan.call_count == 1

@@ -57,7 +57,10 @@ def _execute_command(request: pytest.FixtureRequest, terra: Union[tftest.Terrafo
       **{
           k: v
           for k, v in terra.__dict__.items()
-          if type(v) in [str, int, bool, dict, list]
+          # use constant attr to prevent hash from being different
+          # on an test by test basis (e.g. self.env will include 
+          # different env vars for every test)
+          if k in ["binary", "_basedir", "tfdir"]  
       },
       **cmd_kwargs,
   }
