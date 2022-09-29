@@ -40,7 +40,7 @@ from functools import partial
 from pathlib import Path
 from typing import List
 
-__version__ = '1.7.2'
+__version__ = '1.7.3'
 
 _LOGGER = logging.getLogger('tftest')
 
