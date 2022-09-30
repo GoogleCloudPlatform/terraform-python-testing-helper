@@ -40,7 +40,7 @@ from functools import partial
 from pathlib import Path
 from typing import List
 
-__version__ = '1.7.2'
+__version__ = '1.7.3'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -579,7 +579,7 @@ class TerraformTest(object):
       raise TerraformTestError('Terraform executable not found: %s' % e)
     out, err = p.communicate()
     full_output = "".join(full_output_lines)
-    if retcode == 1:
+    if retcode in [1, 11]:
       message = 'Error running command {command}: {retcode} {out} {err}'.format(
           command=cmd, retcode=retcode, out=full_output, err=err)
       _LOGGER.critical(message)

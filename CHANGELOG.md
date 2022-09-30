@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-<!-- None < 2022-08-04 11:44:18+00:00 -->
+<!-- None < 2022-09-29 11:34:08+00:00 -->
+
+## [1.7.3] - 2022-09-29
+<!-- 2022-09-29 11:34:08+00:00 < 2022-09-15 05:29:49+00:00 -->
+
+- [[#58](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/58)] fix: Handle terraform crashes ([grahamhar](https://github.com/grahamhar)) <!-- 2022-09-23 14:38:29+00:00 -->
+
+## [1.7.2] - 2022-09-15
+<!-- 2022-09-15 05:29:49+00:00 < 2022-08-04 11:44:18+00:00 -->
 
 - [[#56](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/56)] add ability to pickle tftest instance objects ([marshall7m](https://github.com/marshall7m)) <!-- 2022-09-15 05:22:57+00:00 -->
 
@@ -152,7 +160,9 @@ All notable changes to this project will be documented in this file.
 <!-- 2019-09-10 06:58:18+00:00 < None -->
 
 <!-- markdown-link-check-disable -->
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.3...HEAD
+[1.7.3]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.2...v1.7.3
+[1.7.2]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.5...v1.7.0
 [1.6.5]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.6.4...v1.6.5
