@@ -514,7 +514,7 @@ class TerraformTest(object):
                                        filenames, deep=cleanup_on_exit,
                                        restore_files=disable_prevent_destroy)
     setup_output = self.init(plugin_dir=plugin_dir, init_vars=init_vars,
-                             backend=backend, **kw)
+                             backend=backend, use_cache=use_cache, **kw)
     if workspace_name:
       setup_output += self.workspace(name=workspace_name)
     return setup_output
