@@ -386,7 +386,10 @@ class TerraformTest(object):
           Output of the tftest instance method
       """
       _LOGGER.info("Cache decorated method: %s", func.__name__)
-      if not self.enable_cache and not kwargs["use_cache"]:
+
+      if not self.enable_cache:
+        return func(self, **kwargs)
+      elif not kwargs.get("use_cache", False):
         return func(self, **kwargs)
 
       cache_dir = self.cache_dir / \
