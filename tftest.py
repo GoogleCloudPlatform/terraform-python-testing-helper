@@ -691,7 +691,7 @@ def _parse_run_all_out(output: str, formatter: TerraformJSONBase) -> str:
 class TerragruntTest(TerraformTest):
 
   def __init__(self, tfdir, basedir=None, binary='terragrunt', env=None,
-               tg_run_all=False):
+               tg_run_all=False, enable_cache=False, cache_dir=None):
     """A helper class that could be used for testing terragrunt
 
     Most operations that apply to :func:`~TerraformTest` also apply to this class.
@@ -708,8 +708,12 @@ class TerragruntTest(TerraformTest):
       binary: (Optional) path to terragrunt command.
       env: a dict with custom environment variables to pass to terraform.
       tg_run_all: whether the test is for terragrunt run-all, default to False
+      enable_cache: Determines if the caching enabled for specific methods
+      cache_dir: optional base directory to use for caching, defaults to
+        the directory of the python file that instantiates this class
     """
-    TerraformTest.__init__(self, tfdir, basedir, binary, env)
+    TerraformTest.__init__(self, tfdir, basedir, binary,
+                           env, enable_cache, cache_dir)
     self.tg_run_all = tg_run_all
     if self.tg_run_all:
       self._plan_formatter = partial(_parse_run_all_out,
