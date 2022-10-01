@@ -386,7 +386,7 @@ class TerraformTest(object):
           Output of the tftest instance method
       """
       _LOGGER.info("Cache decorated method: %s", func.__name__)
-      if not self.enable_cache or not kwargs["use_cache"]:
+      if not self.enable_cache and not kwargs["use_cache"]:
         return func(self, **kwargs)
 
       cache_dir = self.cache_dir / \
@@ -439,7 +439,7 @@ class TerraformTest(object):
   @_cache
   def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
             backend=True, cleanup_on_exit=True, disable_prevent_destroy=False,
-            workspace_name=None, **kw):
+            workspace_name=None, use_cache=False, **kw):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -539,7 +539,7 @@ class TerraformTest(object):
 
   @_cache
   def plan(self, input=False, color=False, refresh=True, tf_vars=None,
-           targets=None, output=False, tf_var_file=None, **kw):
+           targets=None, output=False, tf_var_file=None, use_cache=False, **kw):
     """
     Run Terraform plan command, optionally returning parsed plan output.
 
@@ -574,7 +574,7 @@ class TerraformTest(object):
 
   @_cache
   def apply(self, input=False, color=False, auto_approve=True, tf_vars=None,
-            targets=None, tf_var_file=None, **kw):
+            targets=None, tf_var_file=None, use_cache=False, **kw):
     """
     Run Terraform apply command.
 
@@ -593,7 +593,7 @@ class TerraformTest(object):
     return self.execute_command('apply', *cmd_args).out
 
   @_cache
-  def output(self, name=None, color=False, json_format=True, **kw):
+  def output(self, name=None, color=False, json_format=True, use_cache=False, **kw):
     """Run Terraform output command."""
     cmd_args = []
     if name:
@@ -610,7 +610,7 @@ class TerraformTest(object):
 
   @_cache
   def destroy(self, color=False, auto_approve=True, tf_vars=None, targets=None,
-              tf_var_file=None, **kw):
+              tf_var_file=None, use_cache=False, **kw):
     """Run Terraform destroy command."""
     cmd_args = parse_args(color=color, auto_approve=auto_approve,
                           tf_vars=tf_vars, targets=targets,
