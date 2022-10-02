@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-<!-- None < 2022-09-29 11:34:08+00:00 -->
+## [1.7.4] - 2022-10-02
+
+- [[#57](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/57)] Cache TerraformTest methods ([marshall7m](https://github.com/marshall7m)) <!-- 2022-10-02 16:38:46+00:00 -->
 
 ## [1.7.3] - 2022-09-29
 <!-- 2022-09-29 11:34:08+00:00 < 2022-09-15 05:29:49+00:00 -->
@@ -160,7 +162,8 @@ All notable changes to this project will be documented in this file.
 <!-- 2019-09-10 06:58:18+00:00 < None -->
 
 <!-- markdown-link-check-disable -->
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.3...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.4...HEAD
+[1.7.4]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.3...v1.7.4
 [1.7.3]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.2...v1.7.3
 [1.7.2]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.0...v1.7.1

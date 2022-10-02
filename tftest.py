@@ -43,7 +43,7 @@ import pickle
 from hashlib import sha1
 import inspect
 
-__version__ = '1.7.3'
+__version__ = '1.7.4'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -315,7 +315,8 @@ class TerraformTest(object):
       the directory of the python file that instantiates this class
   """
 
-  def __init__(self, tfdir, basedir=None, binary='terraform', env=None, enable_cache=False, cache_dir=None):
+  def __init__(self, tfdir, basedir=None, binary='terraform', env=None,
+               enable_cache=False, cache_dir=None):
     """Set Terraform folder to operate on, and optional base directory."""
     self._basedir = basedir or os.getcwd()
     self.binary = binary
@@ -376,6 +377,7 @@ class TerraformTest(object):
     return path if os.path.isabs(path) else os.path.join(self._basedir, path)
 
   def _cache(func):
+
     def cache(self, **kwargs):
       """
       Runs the tftest instance method or retreives the cache value if it exists
@@ -399,8 +401,7 @@ class TerraformTest(object):
 
       params = {
           **{
-              k: v
-              for k, v in self.__dict__.items()
+              k: v for k, v in self.__dict__.items()
               # only uses instance attributes that are involved in the results of
               # the decorated method
               if k in ["binary", "_basedir", "tfdir", "env"]
@@ -409,8 +410,8 @@ class TerraformTest(object):
       }
 
       hash_filename = sha1(
-          json.dumps(params, sort_keys=True, default=str).encode("cp037")
-      ).hexdigest() + ".pickle"
+          json.dumps(params, sort_keys=True,
+                     default=str).encode("cp037")).hexdigest() + ".pickle"
 
       cache_key = cache_dir / hash_filename
       _LOGGER.debug("Cache key: %s", cache_key)
@@ -437,6 +438,7 @@ class TerraformTest(object):
             pickle.dump(out, f, pickle.HIGHEST_PROTOCOL)
 
       return out
+
     return cache
 
   @_cache
@@ -596,7 +598,8 @@ class TerraformTest(object):
     return self.execute_command('apply', *cmd_args).out
 
   @_cache
-  def output(self, name=None, color=False, json_format=True, use_cache=False, **kw):
+  def output(self, name=None, color=False, json_format=True, use_cache=False,
+             **kw):
     """Run Terraform output command."""
     cmd_args = []
     if name:
@@ -715,8 +718,8 @@ class TerragruntTest(TerraformTest):
       cache_dir: optional base directory to use for caching, defaults to
         the directory of the python file that instantiates this class
     """
-    TerraformTest.__init__(self, tfdir, basedir, binary,
-                           env, enable_cache, cache_dir)
+    TerraformTest.__init__(self, tfdir, basedir, binary, env, enable_cache,
+                           cache_dir)
     self.tg_run_all = tg_run_all
     if self.tg_run_all:
       self._plan_formatter = partial(_parse_run_all_out,
