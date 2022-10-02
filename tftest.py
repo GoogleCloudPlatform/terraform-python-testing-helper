@@ -25,23 +25,24 @@ from __future__ import unicode_literals
 import collections
 
 import glob
+import inspect
 import itertools
 import json
 import logging
 import os
+import pickle
+import re
 import shutil
 import stat
 import subprocess
 import sys
 import tempfile
 import weakref
-import re
+
 from functools import partial
+from hashlib import sha1
 from pathlib import Path
 from typing import List
-import pickle
-from hashlib import sha1
-import inspect
 
 __version__ = '1.7.4'
 
