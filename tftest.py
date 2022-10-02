@@ -39,6 +39,9 @@ import re
 from functools import partial
 from pathlib import Path
 from typing import List
+import pickle
+from hashlib import sha1
+import inspect
 
 __version__ = '1.7.3'
 
@@ -307,9 +310,12 @@ class TerraformTest(object):
       directory above the one this module lives in.
     binary: path to the Terraform command.
     env: a dict with custom environment variables to pass to terraform.
+    enable_cache: Determines if the caching enabled for specific methods
+    cache_dir: optional base directory to use for caching, defaults to
+      the directory of the python file that instantiates this class
   """
 
-  def __init__(self, tfdir, basedir=None, binary='terraform', env=None):
+  def __init__(self, tfdir, basedir=None, binary='terraform', env=None, enable_cache=False, cache_dir=None):
     """Set Terraform folder to operate on, and optional base directory."""
     self._basedir = basedir or os.getcwd()
     self.binary = binary
@@ -318,6 +324,12 @@ class TerraformTest(object):
     self.tg_run_all = False
     self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
     self._output_formatter = lambda out: TerraformValueDict(json.loads(out))
+    self.enable_cache = enable_cache
+    if not cache_dir:
+      self.cache_dir = Path(os.path.dirname(
+          inspect.stack()[1].filename)) / ".tftest-cache"
+    else:
+      self.cache_dir = Path(cache_dir)
     if env is not None:
       self.env.update(env)
 
@@ -363,9 +375,74 @@ class TerraformTest(object):
     """Make relative path absolute from base dir."""
     return path if os.path.isabs(path) else os.path.join(self._basedir, path)
 
+  def _cache(func):
+    def cache(self, **kwargs):
+      """
+      Runs the tftest instance method or retreives the cache value if it exists
+
+      Args:
+          kwargs: Keyword argument that are passed to the decorated method
+      Returns:
+          Output of the tftest instance method
+      """
+      _LOGGER.info("Cache decorated method: %s", func.__name__)
+
+      if not self.enable_cache:
+        return func(self, **kwargs)
+      elif not kwargs.get("use_cache", False):
+        return func(self, **kwargs)
+
+      cache_dir = self.cache_dir / \
+          Path(self.tfdir.strip("/")) / Path(func.__name__)
+      # creates cache dir if not exists
+      cache_dir.mkdir(parents=True, exist_ok=True)
+
+      params = {
+          **{
+              k: v
+              for k, v in self.__dict__.items()
+              # only uses instance attributes that are involved in the results of
+              # the decorated method
+              if k in ["binary", "_basedir", "tfdir", "env"]
+          },
+          **kwargs,
+      }
+
+      hash_filename = sha1(
+          json.dumps(params, sort_keys=True, default=str).encode("cp037")
+      ).hexdigest() + ".pickle"
+
+      cache_key = cache_dir / hash_filename
+      _LOGGER.debug("Cache key: %s", cache_key)
+
+      try:
+        f = cache_key.open("rb")
+      except OSError:
+        _LOGGER.debug("Could not read cache path")
+      else:
+        _LOGGER.info("Getting output from cache")
+        return pickle.load(f)
+
+      _LOGGER.info("Running command")
+      out = func(self, **kwargs)
+
+      if out:
+        _LOGGER.info("Writing command to cache")
+        try:
+          f = cache_key.open("wb")
+        except OSError as e:
+          _LOGGER.error("Cache could not write path")
+        else:
+          with f:
+            pickle.dump(out, f, pickle.HIGHEST_PROTOCOL)
+
+      return out
+    return cache
+
+  @_cache
   def setup(self, extra_files=None, plugin_dir=None, init_vars=None,
             backend=True, cleanup_on_exit=True, disable_prevent_destroy=False,
-            workspace_name=None, **kw):
+            workspace_name=None, use_cache=False, **kw):
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
@@ -437,13 +514,14 @@ class TerraformTest(object):
                                        filenames, deep=cleanup_on_exit,
                                        restore_files=disable_prevent_destroy)
     setup_output = self.init(plugin_dir=plugin_dir, init_vars=init_vars,
-                             backend=backend, **kw)
+                             backend=backend, use_cache=use_cache, **kw)
     if workspace_name:
       setup_output += self.workspace(name=workspace_name)
     return setup_output
 
+  @_cache
   def init(self, input=False, color=False, force_copy=False, plugin_dir=None,
-           init_vars=None, backend=True, **kw):
+           init_vars=None, backend=True, use_cache=False, **kw):
     """Run Terraform init command."""
     cmd_args = parse_args(input=input, color=color, backend=backend,
                           force_copy=force_copy, plugin_dir=plugin_dir,
@@ -462,8 +540,9 @@ class TerraformTest(object):
       cmd_args = ['new', name]
     return self.execute_command('workspace', *cmd_args).out
 
+  @_cache
   def plan(self, input=False, color=False, refresh=True, tf_vars=None,
-           targets=None, output=False, tf_var_file=None, **kw):
+           targets=None, output=False, tf_var_file=None, use_cache=False, **kw):
     """
     Run Terraform plan command, optionally returning parsed plan output.
 
@@ -496,8 +575,9 @@ class TerraformTest(object):
     except json.JSONDecodeError as e:
       raise TerraformTestError('Error decoding plan output: {}'.format(e))
 
+  @_cache
   def apply(self, input=False, color=False, auto_approve=True, tf_vars=None,
-            targets=None, tf_var_file=None, **kw):
+            targets=None, tf_var_file=None, use_cache=False, **kw):
     """
     Run Terraform apply command.
 
@@ -515,7 +595,8 @@ class TerraformTest(object):
                           tf_var_file=tf_var_file, **kw)
     return self.execute_command('apply', *cmd_args).out
 
-  def output(self, name=None, color=False, json_format=True, **kw):
+  @_cache
+  def output(self, name=None, color=False, json_format=True, use_cache=False, **kw):
     """Run Terraform output command."""
     cmd_args = []
     if name:
@@ -530,8 +611,9 @@ class TerraformTest(object):
         _LOGGER.warning('error decoding output: {}'.format(e))
     return output
 
+  @_cache
   def destroy(self, color=False, auto_approve=True, tf_vars=None, targets=None,
-              tf_var_file=None, **kw):
+              tf_var_file=None, use_cache=False, **kw):
     """Run Terraform destroy command."""
     cmd_args = parse_args(color=color, auto_approve=auto_approve,
                           tf_vars=tf_vars, targets=targets,
@@ -612,7 +694,7 @@ def _parse_run_all_out(output: str, formatter: TerraformJSONBase) -> str:
 class TerragruntTest(TerraformTest):
 
   def __init__(self, tfdir, basedir=None, binary='terragrunt', env=None,
-               tg_run_all=False):
+               tg_run_all=False, enable_cache=False, cache_dir=None):
     """A helper class that could be used for testing terragrunt
 
     Most operations that apply to :func:`~TerraformTest` also apply to this class.
@@ -629,8 +711,12 @@ class TerragruntTest(TerraformTest):
       binary: (Optional) path to terragrunt command.
       env: a dict with custom environment variables to pass to terraform.
       tg_run_all: whether the test is for terragrunt run-all, default to False
+      enable_cache: Determines if the caching enabled for specific methods
+      cache_dir: optional base directory to use for caching, defaults to
+        the directory of the python file that instantiates this class
     """
-    TerraformTest.__init__(self, tfdir, basedir, binary, env)
+    TerraformTest.__init__(self, tfdir, basedir, binary,
+                           env, enable_cache, cache_dir)
     self.tg_run_all = tg_run_all
     if self.tg_run_all:
       self._plan_formatter = partial(_parse_run_all_out,

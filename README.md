@@ -78,6 +78,42 @@ def test_run_all_apply(run_all_apply_out):
     assert len(run_all_apply_out) == 3
 ```
 
+## Caching
+
+The `TerraformTest` `setup`, `init`, `plan`, `apply`, `output` and `destroy` methods have the ability to cache it's associate output to a local `.tftest-cache` directory. For subsequent calls of the method, the cached value can be returned instead of calling the actual underlying `terraform` command. Using the cache value can be significantly faster than running the Terraform command again especially if the command is time-intensive.
+
+To determine if the cache should be used, first a hash value is generated using the current `TerraformTest` instance `__init__` and calling method arguments. The hash value is compared to the hash value of the cached instance's associated arguments. If the hash is the same then the cache is used, otherwise the method is executed.
+
+The benefits of the caching feature include:
+- Faster setup time for testing terraform modules that don't change between testing sessions
+- Writing tests without worrying about errors within their test code resulting in the Terraform setup logic to run again
+
+Please see the following example for how to use it:
+
+```python
+import pytest
+import tftest
+
+
+@pytest.fixture
+def output(fixtures_dir):
+  tf = tftest.TerraformTest('apply', fixtures_dir, enable_cache=True)
+  tf.setup(use_cache=True)
+  tf.apply(use_cache=True)
+  yield tf.output(use_cache=True)
+  tf.destroy(use_cache=True, **{"auto_approve": True})
+
+
+def test_apply(output):
+  value = output['triggers']
+  assert len(value) == 2
+  assert list(value[0].keys()) == ['name', 'template']
+  assert value[0]['name'] == 'one'
+
+```
+
+
+
 ## Compatibility
 
 Starting from version `1.0.0` Terraform `0.12` is required, and tests written with previous versions of this module are incompatible. Check the [`CHANGELOG.md`](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/blob/master/CHANGELOG.md) file for details on what's changed.

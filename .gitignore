@@ -125,6 +125,12 @@ dmypy.json
 # Local .terraform directories
 **/.terraform/*
 
+# Local .terragrunt directories
+**/.terragrunt-cache/*
+
+# Local .tftest-cache directories
+**/.tftest-cache/*
+
 # .tfstate files
 *.tfstate
 *.tfstate.*
