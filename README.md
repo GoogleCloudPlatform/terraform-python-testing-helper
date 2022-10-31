@@ -82,7 +82,7 @@ def test_run_all_apply(run_all_apply_out):
 
 The `TerraformTest` `setup`, `init`, `plan`, `apply`, `output` and `destroy` methods have the ability to cache it's associate output to a local `.tftest-cache` directory. For subsequent calls of the method, the cached value can be returned instead of calling the actual underlying `terraform` command. Using the cache value can be significantly faster than running the Terraform command again especially if the command is time-intensive.
 
-To determine if the cache should be used, first a hash value is generated using the current `TerraformTest` instance `__init__` and calling method arguments. The hash value is compared to the hash value of the cached instance's associated arguments. If the hash is the same then the cache is used, otherwise the method is executed.
+To determine if the cache should be used, first a hash value is generated using the current `TerraformTest` instance `__init__` and calling method arguments, file contents of the `tfdir` and file contents of any `tf_var_file` or `extra_files` method argument. The hash value is compared to the hash value of the cached instance's associated arguments. If the hash is the same then the cache is used, otherwise the method is executed.
 
 The benefits of the caching feature include:
 - Faster setup time for testing terraform modules that don't change between testing sessions
