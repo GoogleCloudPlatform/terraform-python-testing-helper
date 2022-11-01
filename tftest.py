@@ -384,16 +384,16 @@ class TerraformTest(object):
   def _dirhash(self, directory, hash, ignore_hidden=False, excluded_extensions=[]):
     assert Path(directory).is_dir()
     for path in sorted(Path(directory).iterdir(), key=lambda p: str(p).lower()):
-        if path.is_file():
-            if not ignore_hidden and path.basename().startswith("."):
-              continue
-            if path.suffix in excluded_extensions:
-              continue
-            with open(path, "rb") as f:
-                for chunk in iter(lambda: f.read(4096), b""):
-                    hash.update(chunk)
-        elif path.is_dir():
-            hash = self._dirhash(path, hash)
+      if path.is_file():
+        if not ignore_hidden and path.basename().startswith("."):
+          continue
+        if path.suffix in excluded_extensions:
+          continue
+        with open(path, "rb") as f:
+          for chunk in iter(lambda: f.read(4096), b""):
+            hash.update(chunk)
+      elif path.is_dir():
+        hash = self._dirhash(path, hash)
     return hash
 
   def _cache(func):
@@ -442,7 +442,7 @@ class TerraformTest(object):
       # creates hash of all file content within tfdir
       # excludes hidden files from being used within hash (ignores .terraform/ or .terragrunt-cache/)
       # and excludes any local tfstate files
-      
+
       params["tfdir"] = self._dirhash(
           self.tfdir, sha1(), ignore_hidden=True, excluded_extensions=['.backup', '.tfstate']).hexdigest()
 
