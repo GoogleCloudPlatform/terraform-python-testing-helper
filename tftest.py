@@ -42,6 +42,7 @@ from functools import partial
 from hashlib import sha1
 from pathlib import Path
 from typing import List
+from checksumdir import dirhash
 
 __version__ = '1.7.4'
 
@@ -107,7 +108,8 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   ]
   for arg in _TG_KV_ARGS:
     if kw.get(f"tg_{arg}"):
-      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}', kw[f"tg_{arg}"]]
+      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}',
+                   kw[f"tg_{arg}"]]
   if kw.get('tg_parallelism'):
     cmd_args.append(f'--terragrunt-parallelism {kw["tg_parallelism"]}')
   if isinstance(kw.get('tg_override_attr'), dict):
@@ -321,10 +323,12 @@ class TerraformTest(object):
     self._basedir = basedir or os.getcwd()
     self.binary = binary
     self.tfdir = self._abspath(tfdir)
+    self._env = env or {}
     self.env = os.environ.copy()
     self.tg_run_all = False
     self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
-    self._output_formatter = lambda out: TerraformValueDict(json.loads(out))
+    self._output_formatter = lambda out: TerraformValueDict(
+        json.loads(out))
     self.enable_cache = enable_cache
     if not cache_dir:
       self.cache_dir = Path(os.path.dirname(
@@ -359,11 +363,13 @@ class TerraformTest(object):
     for tg_dir in glob.glob(path, recursive=True):
       if os.path.isdir(tg_dir):
         shutil.rmtree(tg_dir, onerror=remove_readonly)
-    _LOGGER.debug('Restoring original TF files after prevent destroy changes')
+    _LOGGER.debug(
+        'Restoring original TF files after prevent destroy changes')
     if restore_files:
       for bkp_file in Path(tfdir).rglob('*.bkp'):
         try:
-          shutil.copy(str(bkp_file), f'{str(bkp_file).strip(".bkp")}')
+          shutil.copy(str(bkp_file),
+                      f'{str(bkp_file).strip(".bkp")}')
         except (IOError, OSError):
           _LOGGER.exception(
               f'Unable to restore terraform file {bkp_file.resolve()}')
@@ -404,10 +410,26 @@ class TerraformTest(object):
               k: v for k, v in self.__dict__.items()
               # only uses instance attributes that are involved in the results of
               # the decorated method
-              if k in ["binary", "_basedir", "tfdir", "env"]
+              if k in ["binary", "_basedir", "tfdir", "_env"]
           },
           **kwargs,
       }
+
+      # creates hash of file contents
+      for path_param in ["extra_files", "tf_var_file"]:
+        if path_param in kwargs:
+          if isinstance(kwargs[path_param], list):
+            params[path_param] = [
+                sha1(open(fp, 'rb').read()).hexdigest() for fp in kwargs[path_param]]
+          else:
+            params[path_param] = sha1(
+                open(kwargs[path_param], 'rb').read()).hexdigest()
+
+      # creates hash of all file content within tfdir
+      # excludes hidden files from being used within hash (ignores .terraform/ or .terragrunt-cache/)
+      # and excludes any local tfstate files
+      params["tfdir"] = dirhash(
+          self.tfdir, 'sha1', ignore_hidden=True, excluded_extensions=['backup', 'tfstate'])
 
       hash_filename = sha1(
           json.dumps(params, sort_keys=True,
@@ -575,7 +597,8 @@ class TerraformTest(object):
     try:
       return self._plan_formatter(result.out)
     except json.JSONDecodeError as e:
-      raise TerraformTestError('Error decoding plan output: {}'.format(e))
+      raise TerraformTestError(
+          'Error decoding plan output: {}'.format(e))
 
   @_cache
   def apply(self, input=False, color=False, auto_approve=True, tf_vars=None,
