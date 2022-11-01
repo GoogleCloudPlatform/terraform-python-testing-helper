@@ -42,7 +42,6 @@ from functools import partial
 from hashlib import sha1
 from pathlib import Path
 from typing import List
-from checksumdir import dirhash
 
 __version__ = '1.7.4'
 
@@ -382,6 +381,21 @@ class TerraformTest(object):
     """Make relative path absolute from base dir."""
     return path if os.path.isabs(path) else os.path.join(self._basedir, path)
 
+  def _dirhash(self, directory, hash, ignore_hidden=False, excluded_extensions=[]):
+    assert Path(directory).is_dir()
+    for path in sorted(Path(directory).iterdir(), key=lambda p: str(p).lower()):
+        if path.is_file():
+            if not ignore_hidden and path.basename().startswith("."):
+              continue
+            if path.suffix in excluded_extensions:
+              continue
+            with open(path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash.update(chunk)
+        elif path.is_dir():
+            hash = self._dirhash(path, hash)
+    return hash
+
   def _cache(func):
 
     def cache(self, **kwargs):
@@ -428,13 +442,13 @@ class TerraformTest(object):
       # creates hash of all file content within tfdir
       # excludes hidden files from being used within hash (ignores .terraform/ or .terragrunt-cache/)
       # and excludes any local tfstate files
-      params["tfdir"] = dirhash(
-          self.tfdir, 'sha1', ignore_hidden=True, excluded_extensions=['backup', 'tfstate'])
+      
+      params["tfdir"] = self._dirhash(
+          self.tfdir, sha1(), ignore_hidden=True, excluded_extensions=['.backup', '.tfstate']).hexdigest()
 
       hash_filename = sha1(
           json.dumps(params, sort_keys=True,
                      default=str).encode("cp037")).hexdigest() + ".pickle"
-
       cache_key = cache_dir / hash_filename
       _LOGGER.debug("Cache key: %s", cache_key)
 
