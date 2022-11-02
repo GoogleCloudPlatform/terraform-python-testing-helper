@@ -5,7 +5,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+<!-- None < 2022-11-02 06:51:48+00:00 -->
+
+## [1.7.5] - 2022-11-02
+<!-- 2022-11-02 06:51:48+00:00 < 2022-10-02 16:42:19+00:00 -->
+
+- [[#61](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/61)] Replace cache checksumdir pypi pkg with internal _dirhash() ([marshall7m](https://github.com/marshall7m)) <!-- 2022-11-02 06:30:26+00:00 -->
+- [[#60](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/60)] Finer grained cache hash input ([marshall7m](https://github.com/marshall7m)) <!-- 2022-11-01 09:05:28+00:00 -->
+
 ## [1.7.4] - 2022-10-02
+<!-- 2022-10-02 16:42:19+00:00 < 2022-09-29 11:34:08+00:00 -->
 
 - [[#57](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/57)] Cache TerraformTest methods ([marshall7m](https://github.com/marshall7m)) <!-- 2022-10-02 16:38:46+00:00 -->
 
@@ -162,7 +171,8 @@ All notable changes to this project will be documented in this file.
 <!-- 2019-09-10 06:58:18+00:00 < None -->
 
 <!-- markdown-link-check-disable -->
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.4...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.5...HEAD
+[1.7.5]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.4...v1.7.5
 [1.7.4]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.3...v1.7.4
 [1.7.3]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.2...v1.7.3
 [1.7.2]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.1...v1.7.2
