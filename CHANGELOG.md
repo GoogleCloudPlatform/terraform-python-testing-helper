@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-<!-- None < 2022-11-02 06:51:48+00:00 -->
+
+## [1.7.6] - 2022-11-02
+
+- [[#62](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/62)] Inherit TerraformJSONBase from Mapping ABC ([juliocc](https://github.com/juliocc)) <!-- 2022-11-02 13:43:24+00:00 -->
 
 ## [1.7.5] - 2022-11-02
 <!-- 2022-11-02 06:51:48+00:00 < 2022-10-02 16:42:19+00:00 -->
@@ -171,7 +174,8 @@ All notable changes to this project will be documented in this file.
 <!-- 2019-09-10 06:58:18+00:00 < None -->
 
 <!-- markdown-link-check-disable -->
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.5...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.6...HEAD
+[1.7.6]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.5...v1.7.6
 [1.7.5]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.4...v1.7.5
 [1.7.4]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.3...v1.7.4
 [1.7.3]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.2...v1.7.3
