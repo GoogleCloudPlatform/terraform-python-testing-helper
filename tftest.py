@@ -154,7 +154,7 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   return cmd_args
 
 
-class TerraformJSONBase(object):
+class TerraformJSONBase(collections.abc.Mapping):
   "Base class for JSON wrappers."
 
   def __init__(self, raw):
@@ -162,6 +162,12 @@ class TerraformJSONBase(object):
 
   def __bytes__(self):
     return bytes(self._raw)
+
+  def __getitem__(self, index):
+    return self._raw[index]
+
+  def __iter__(self):
+    return iter(self._raw)
 
   def __len__(self):
     return len(self._raw)
@@ -187,12 +193,6 @@ class TerraformValueDict(TerraformJSONBase):
   def __getitem__(self, name):
     return self._raw[name].get('value')
 
-  def __contains__(self, name):
-    return name in self._raw
-
-  def __iter__(self):
-    return iter(self._raw)
-
 
 class TerraformPlanModule(TerraformJSONBase):
   "Minimal wrapper for parsed plan output modules."
@@ -217,12 +217,6 @@ class TerraformPlanModule(TerraformJSONBase):
       self._resources = dict((res['address'][self._strip:], res)
                              for res in self._raw.get('resources', []))
     return self._resources
-
-  def __getitem__(self, name):
-    return self._raw[name]
-
-  def __contains__(self, name):
-    return name in self._raw
 
 
 class TerraformPlanOutput(TerraformJSONBase):
