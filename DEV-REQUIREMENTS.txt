@@ -1,3 +1,2 @@
 autopep8
 pytest>=5.2.2
-checksumdir
