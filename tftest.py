@@ -387,7 +387,7 @@ class TerraformTest(object):
           for chunk in iter(lambda: f.read(4096), b""):
             hash.update(chunk)
       elif path.is_dir():
-        hash = self._dirhash(path, hash)
+        hash = self._dirhash(path, hash, ignore_hidden=ignore_hidden)
     return hash
 
   def _cache(func):
