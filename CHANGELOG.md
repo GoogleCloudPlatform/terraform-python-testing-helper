@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+<!-- None < 2022-11-02 13:49:30+00:00 -->
+
+- [[#63](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/63)] Cache hidden dir bug ([marshall7m](https://github.com/marshall7m)) <!-- 2022-11-04 12:57:20+00:00 -->
 
 ## [1.7.6] - 2022-11-02
 
