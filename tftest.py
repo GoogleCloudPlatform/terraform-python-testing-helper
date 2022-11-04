@@ -379,7 +379,7 @@ class TerraformTest(object):
     assert Path(directory).is_dir()
     for path in sorted(Path(directory).iterdir(), key=lambda p: str(p).lower()):
       if path.is_file():
-        if not ignore_hidden and path.basename().startswith("."):
+        if not ignore_hidden and path.name.startswith("."):
           continue
         if path.suffix in excluded_extensions:
           continue
@@ -387,7 +387,7 @@ class TerraformTest(object):
           for chunk in iter(lambda: f.read(4096), b""):
             hash.update(chunk)
       elif path.is_dir():
-        hash = self._dirhash(path, hash)
+        hash = self._dirhash(path, hash, ignore_hidden=ignore_hidden)
     return hash
 
   def _cache(func):
