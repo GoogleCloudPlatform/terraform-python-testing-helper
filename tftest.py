@@ -376,19 +376,57 @@ class TerraformTest(object):
     return path if os.path.isabs(path) else os.path.join(self._basedir, path)
 
   def _dirhash(self, directory, hash, ignore_hidden=False, excluded_extensions=[]):
+    """Returns hash of directory's file contents"""
     assert Path(directory).is_dir()
-    for path in sorted(Path(directory).iterdir(), key=lambda p: str(p).lower()):
+    try:
+      dir_iter = sorted(Path(directory).iterdir(),
+                        key=lambda p: str(p).lower())
+    except FileNotFoundError:
+      return hash
+    for path in dir_iter:
       if path.is_file():
-        if not ignore_hidden and path.name.startswith("."):
+        if ignore_hidden and path.name.startswith("."):
           continue
         if path.suffix in excluded_extensions:
           continue
         with open(path, "rb") as f:
           for chunk in iter(lambda: f.read(4096), b""):
             hash.update(chunk)
-      elif path.is_dir():
-        hash = self._dirhash(path, hash, ignore_hidden=ignore_hidden)
+      elif path.is_dir() and path.name != ".terraform":
+        hash = self._dirhash(path, hash, ignore_hidden=ignore_hidden,
+                             excluded_extensions=excluded_extensions)
     return hash
+
+  def generate_cache_hash(self, method_kwargs):
+    """Returns a hash value using the instance's attributes and method keyword arguments"""
+    params = {
+        **{
+            k: v for k, v in self.__dict__.items()
+            # only uses instance attributes that are involved in the results of
+            # the decorated method
+            if k in ["binary", "_basedir", "tfdir", "_env"]
+        },
+        **method_kwargs,
+    }
+
+    # creates hash of file contents
+    for path_param in ["extra_files", "tf_var_file"]:
+      if path_param in method_kwargs:
+        if isinstance(method_kwargs[path_param], list):
+          params[path_param] = [
+              sha1(open(fp, 'rb').read()).hexdigest() for fp in method_kwargs[path_param]]
+        else:
+          params[path_param] = sha1(
+              open(method_kwargs[path_param], 'rb').read()).hexdigest()
+
+    # creates hash of all file content within tfdir
+    # excludes hidden files from being used within hash (ignores .terraform/ or .terragrunt-cache/)
+    # and excludes any local tfstate files
+    params["tfdir"] = self._dirhash(
+        self.tfdir, sha1(), ignore_hidden=True, excluded_extensions=['.backup', '.tfstate']).hexdigest()
+
+    return sha1(json.dumps(params, sort_keys=True,
+                           default=str).encode("cp037")).hexdigest() + ".pickle"
 
   def _cache(func):
 
@@ -410,54 +448,44 @@ class TerraformTest(object):
 
       cache_dir = self.cache_dir / \
           Path(self.tfdir.strip("/")) / Path(func.__name__)
-      # creates cache dir if not exists
       cache_dir.mkdir(parents=True, exist_ok=True)
 
-      params = {
-          **{
-              k: v for k, v in self.__dict__.items()
-              # only uses instance attributes that are involved in the results of
-              # the decorated method
-              if k in ["binary", "_basedir", "tfdir", "_env"]
-          },
-          **kwargs,
-      }
+      # determines if cache hash value should be created before running decorated method
+      create_hash_before_cmd = True
+      if self.binary == "terragrunt":
+        # determines if .terragrunt-cache/ exists already
+        tg_cache_dir = self.env.get("TERRAGRUNT_DOWNLOAD", ".terragrunt-cache")
+        tg_cache_dir = tg_cache_dir if os.path.isabs(
+            tg_cache_dir) else os.path.join(self.tfdir, tg_cache_dir)
+        if not os.path.isdir(tg_cache_dir):
+          create_hash_before_cmd = False
 
-      # creates hash of file contents
-      for path_param in ["extra_files", "tf_var_file"]:
-        if path_param in kwargs:
-          if isinstance(kwargs[path_param], list):
-            params[path_param] = [
-                sha1(open(fp, 'rb').read()).hexdigest() for fp in kwargs[path_param]]
-          else:
-            params[path_param] = sha1(
-                open(kwargs[path_param], 'rb').read()).hexdigest()
+      if create_hash_before_cmd:
+        _LOGGER.debug("Creating hash filename before running the command")
+        hash_filename = self.generate_cache_hash(kwargs)
+        cache_key = cache_dir / hash_filename
+        _LOGGER.debug("Cache key: %s", cache_key)
 
-      # creates hash of all file content within tfdir
-      # excludes hidden files from being used within hash (ignores .terraform/ or .terragrunt-cache/)
-      # and excludes any local tfstate files
-
-      params["tfdir"] = self._dirhash(
-          self.tfdir, sha1(), ignore_hidden=True, excluded_extensions=['.backup', '.tfstate']).hexdigest()
-
-      hash_filename = sha1(
-          json.dumps(params, sort_keys=True,
-                     default=str).encode("cp037")).hexdigest() + ".pickle"
-      cache_key = cache_dir / hash_filename
-      _LOGGER.debug("Cache key: %s", cache_key)
-
-      try:
-        f = cache_key.open("rb")
-      except OSError:
-        _LOGGER.debug("Could not read cache path")
-      else:
-        _LOGGER.info("Getting output from cache")
-        return pickle.load(f)
+        try:
+          f = cache_key.open("rb")
+        except OSError:
+          _LOGGER.debug("Could not read cache path")
+        else:
+          _LOGGER.info("Getting output from cache")
+          return pickle.load(f)
 
       _LOGGER.info("Running command")
       out = func(self, **kwargs)
 
       if out:
+        if not create_hash_before_cmd:
+          _LOGGER.debug("Creating hash filename after running the command")
+          # the hash value will now include .terragrunt-cache files
+          # including any terragrunt generated files
+          hash_filename = self.generate_cache_hash(kwargs)
+          cache_key = cache_dir / hash_filename
+          _LOGGER.debug("Cache key: %s", cache_key)
+
         _LOGGER.info("Writing command to cache")
         try:
           f = cache_key.open("wb")
