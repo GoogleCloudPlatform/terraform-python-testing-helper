@@ -450,41 +450,28 @@ class TerraformTest(object):
           Path(self.tfdir.strip("/")) / Path(func.__name__)
       cache_dir.mkdir(parents=True, exist_ok=True)
 
-      # determines if cache hash value should be created before running decorated method
-      create_hash_before_cmd = True
-      if self.binary == "terragrunt":
-        # determines if .terragrunt-cache/ exists already
-        tg_cache_dir = self.env.get("TERRAGRUNT_DOWNLOAD", ".terragrunt-cache")
-        tg_cache_dir = tg_cache_dir if os.path.isabs(
-            tg_cache_dir) else os.path.join(self.tfdir, tg_cache_dir)
-        if not os.path.isdir(tg_cache_dir):
-          create_hash_before_cmd = False
+      hash_filename = self.generate_cache_hash(kwargs)
+      cache_key = cache_dir / hash_filename
+      _LOGGER.debug("Cache key: %s", cache_key)
 
-      if create_hash_before_cmd:
-        _LOGGER.debug("Creating hash filename before running the command")
-        hash_filename = self.generate_cache_hash(kwargs)
-        cache_key = cache_dir / hash_filename
-        _LOGGER.debug("Cache key: %s", cache_key)
-
-        try:
-          f = cache_key.open("rb")
-        except OSError:
-          _LOGGER.debug("Could not read cache path")
-        else:
-          _LOGGER.info("Getting output from cache")
-          return pickle.load(f)
+      try:
+        f = cache_key.open("rb")
+      except OSError:
+        _LOGGER.debug("Could not read cache path")
+      else:
+        _LOGGER.info("Getting output from cache")
+        return pickle.load(f)
 
       _LOGGER.info("Running command")
       out = func(self, **kwargs)
 
       if out:
-        if not create_hash_before_cmd:
-          _LOGGER.debug("Creating hash filename after running the command")
-          # the hash value will now include .terragrunt-cache files
-          # including any terragrunt generated files
-          hash_filename = self.generate_cache_hash(kwargs)
-          cache_key = cache_dir / hash_filename
-          _LOGGER.debug("Cache key: %s", cache_key)
+        # the hash value will now include any changes
+        # to the tfdir directory including any terragrunt
+        # generated files
+        hash_filename = self.generate_cache_hash(kwargs)
+        cache_key = cache_dir / hash_filename
+        _LOGGER.debug("Cache key: %s", cache_key)
 
         _LOGGER.info("Writing command to cache")
         try:
