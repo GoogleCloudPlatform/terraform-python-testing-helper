@@ -375,7 +375,7 @@ class TerraformTest(object):
     """Make relative path absolute from base dir."""
     return path if os.path.isabs(path) else os.path.join(self._basedir, path)
 
-  def _dirhash(self, directory, hash, ignore_hidden=False, excluded_extensions=[]):
+  def _dirhash(self, directory, hash, ignore_hidden=False, exclude_directories=[], excluded_extensions=[]):
     """Returns hash of directory's file contents"""
     assert Path(directory).is_dir()
     try:
@@ -392,9 +392,9 @@ class TerraformTest(object):
         with open(path, "rb") as f:
           for chunk in iter(lambda: f.read(4096), b""):
             hash.update(chunk)
-      elif path.is_dir() and path.name != ".terraform":
+      elif path.is_dir() and path.name not in exclude_directories:
         hash = self._dirhash(path, hash, ignore_hidden=ignore_hidden,
-                             excluded_extensions=excluded_extensions)
+                             exclude_directories=exclude_directories, excluded_extensions=excluded_extensions)
     return hash
 
   def generate_cache_hash(self, method_kwargs):
@@ -420,10 +420,9 @@ class TerraformTest(object):
               open(method_kwargs[path_param], 'rb').read()).hexdigest()
 
     # creates hash of all file content within tfdir
-    # excludes hidden files from being used within hash (ignores .terraform/ or .terragrunt-cache/)
-    # and excludes any local tfstate files
+    # excludes .terraform/, hidden files, tfstate files from being used for hash
     params["tfdir"] = self._dirhash(
-        self.tfdir, sha1(), ignore_hidden=True, excluded_extensions=['.backup', '.tfstate']).hexdigest()
+        self.tfdir, sha1(), ignore_hidden=True, exclude_directories=[".terraform"], excluded_extensions=['.backup', '.tfstate']).hexdigest()
 
     return sha1(json.dumps(params, sort_keys=True,
                            default=str).encode("cp037")).hexdigest() + ".pickle"
