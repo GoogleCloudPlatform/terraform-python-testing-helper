@@ -70,10 +70,6 @@ def test_use_cache(tf):
     ),
 ], indirect=True)
 def test_no_use_cache(tf):
-  """
-  Ensures cache is not used and runs the execute_command() for every call of
-  the method
-  """
   expected_call_count = 2
   for method in cache_methods:
     with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
@@ -84,6 +80,10 @@ def test_no_use_cache(tf):
 
 @pytest.mark.parametrize("tf", [True], indirect=True)
 def test_use_cache_with_same_tf_var_file(tf, tmp_path):
+  """
+  Ensures cache is used if the same tf_var_file argument is passed
+  within subsequent method calls
+  """
   tf_var_file_methods = ["plan", "apply", "destroy"]
 
   tf_vars_file = tmp_path / (str(uuid.uuid4()) + '.json')
@@ -99,6 +99,10 @@ def test_use_cache_with_same_tf_var_file(tf, tmp_path):
 
 @pytest.mark.parametrize("tf", [True], indirect=True)
 def test_use_cache_with_new_tf_var_file(tf, tmp_path):
+  """
+  Ensures cache is not used if a different tf_var_file argument is passed
+  within subsequent method calls
+  """
   tf_var_file_methods = ["plan", "apply", "destroy"]
   expected_call_count = 2
 
@@ -116,6 +120,10 @@ def test_use_cache_with_new_tf_var_file(tf, tmp_path):
 
 @pytest.mark.parametrize("tf", [True], indirect=True)
 def test_use_cache_with_new_extra_files(tf, tmp_path):
+  """
+  Ensures cache is not used if a different extra_files argument is passed
+  within subsequent method calls
+  """
   expected_call_count = 2
   tf_vars_file = tmp_path / (str(uuid.uuid4()) + '.json')
   tf_vars_file.write_text(json.dumps({"foo": "old"}))
@@ -130,6 +138,10 @@ def test_use_cache_with_new_extra_files(tf, tmp_path):
 
 @pytest.mark.parametrize("tf", [True], indirect=True)
 def test_use_cache_with_same_extra_files(tf, tmp_path):
+  """
+  Ensures cache is used if the same extra_files argument is passed
+  within subsequent method calls
+  """
   tf_vars_file = tmp_path / (str(uuid.uuid4()) + '.json')
   tf_vars_file.write_text(json.dumps({"foo": "old"}))
 
@@ -142,6 +154,10 @@ def test_use_cache_with_same_extra_files(tf, tmp_path):
 
 @pytest.mark.parametrize("tf", [True], indirect=True)
 def test_use_cache_with_new_env(tf):
+  """
+  Ensures cache is not used if the env attribute is updated
+  before subsequent method calls
+  """
   expected_call_count = 2
   for method in cache_methods:
     with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
@@ -167,6 +183,10 @@ def dummy_tf_filepath(tf):
 
 @pytest.mark.parametrize("tf", [True], indirect=True)
 def test_use_cache_with_new_tf_content(tf, dummy_tf_filepath):
+  """
+  Ensures cache is not used if the tfdir directory is updated
+  before subsequent method calls
+  """
   expected_call_count = 2
   for method in cache_methods:
     with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
