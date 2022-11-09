@@ -5,9 +5,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-
 <!-- None < 2022-11-04 13:00:05+00:00 -->
 
+## [1.8.0] - 2022-11-09
+
+- [[#64](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/64)] Create cache hash after command ([marshall7m](https://github.com/marshall7m)) <!-- 2022-11-09 06:40:50+00:00 -->
 
 ## [1.7.7] - 2022-11-04
 <!-- 2022-11-04 13:00:05+00:00 < 2022-11-02 13:49:30+00:00 -->
@@ -182,7 +184,8 @@ All notable changes to this project will be documented in this file.
 <!-- 2019-09-10 06:58:18+00:00 < None -->
 
 <!-- markdown-link-check-disable -->
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.7...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.7...v1.8.0
 [1.7.7]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.6...v1.7.7
 [1.7.6]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.5...v1.7.6
 [1.7.5]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.4...v1.7.5
