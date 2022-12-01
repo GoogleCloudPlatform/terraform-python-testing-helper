@@ -151,9 +151,8 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     cmd_args += [("-target={}".format(t)) for t in targets]
   if kw.get('tf_var_file'):
     tf_var_file = kw['tf_var_file']
-    if isinstance(tf_var_file, list):
-      for x in tf_var_file:
-        cmd_args.append('-var-file={}'.format(x))
+    if isinstance(tf_var_file, (list, tuple)):
+      cmd_args += ['-var-file={}'.format(v) for v in tf_var_file]
     else:
       cmd_args.append('-var-file={}'.format(tf_var_file))
   return cmd_args

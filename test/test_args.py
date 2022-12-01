@@ -45,6 +45,8 @@ ARGS_TESTS = (
     ({'upgrade': False}, []),
     ({'tf_var_file': None}, []),
     ({'tf_var_file': 'foo.tfvar'}, ['-var-file=foo.tfvar']),
+    ({'tf_var_file': ['foo.tfvar', 'bar.tfvar']}, [
+     '-var-file=foo.tfvar', '-var-file=bar.tfvar']),
 )
 
 
