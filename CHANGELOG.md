@@ -5,8 +5,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+
+<!-- None < 2022-12-01 06:54:32+00:00 -->
+
+
 ## [1.8.1] - 2022-12-01
-<!-- None < 2022-11-09 06:45:04+00:00 -->
+<!-- 2022-12-01 06:54:32+00:00 < 2022-11-09 06:45:04+00:00 -->
 
 - [[#66](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/66)] Support both lists and tuples in var-file arg and add relevant test ([ludoo](https://github.com/ludoo)) <!-- 2022-12-01 06:47:08+00:00 -->
 - [[#65](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/65)] Allow passing a list to tf_var_file ([juliocc](https://github.com/juliocc)) <!-- 2022-11-30 19:45:18+00:00 -->
