@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.1] - 2022-12-01
 <!-- None < 2022-11-09 06:45:04+00:00 -->
 
 - [[#66](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/66)] Support both lists and tuples in var-file arg and add relevant test ([ludoo](https://github.com/ludoo)) <!-- 2022-12-01 06:47:08+00:00 -->
@@ -188,7 +189,8 @@ All notable changes to this project will be documented in this file.
 <!-- 2019-09-10 06:58:18+00:00 < None -->
 
 <!-- markdown-link-check-disable -->
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.1...HEAD
+[1.8.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.7...v1.8.0
 [1.7.7]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.6...v1.7.7
 [1.7.6]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.5...v1.7.6
