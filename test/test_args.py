@@ -47,11 +47,21 @@ ARGS_TESTS = (
     ({'tf_var_file': 'foo.tfvar'}, ['-var-file=foo.tfvar']),
     ({'tf_var_file': ['foo.tfvar', 'bar.tfvar']}, [
      '-var-file=foo.tfvar', '-var-file=bar.tfvar']),
+    ({'tf_vars': {'text':'text'}}, ['-var', 'text=text']),
+    ({'tf_vars': {'number': 0}}, ['-var', 'number=0']),
+    ({'tf_vars': {'bool': False}}, ['-var', 'bool=False']),
+    ({'tf_vars': {'dict': {'text':'text'}}}, 
+     ['-var', 'dict={"text": "text"}']),
+    ({'tf_vars': {'list': ['item1', 'item2']}}, 
+     ['-var', 'list=["item1", "item2"]']),
+    ({'tf_vars': {'dict': {'list':['item1','item2']}}}, 
+     ['-var', 'dict={"list": ["item1", "item2"]}']),
 )
 
 
 @pytest.mark.parametrize("kwargs, expected", ARGS_TESTS)
 def test_args(kwargs, expected):
+  print(tftest.parse_args())
   assert tftest.parse_args() == []
   assert tftest.parse_args(**kwargs) == expected
 

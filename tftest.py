@@ -146,7 +146,9 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   if tf_vars:
     cmd_args += list(
       itertools.chain.from_iterable(
-        ("-var", "{}={}".format(k, json.dumps(v) if isinstance(v, (dict, list)) else v)) for k, v in tf_vars.items()
+        ("-var", 
+         "{}={}".format(k, json.dumps(v) if isinstance(v, (dict, list)) else v))
+           for k, v in tf_vars.items()
     ))
   if targets:
     cmd_args += [("-target={}".format(t)) for t in targets]
