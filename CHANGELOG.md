@@ -5,9 +5,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-
 <!-- None < 2022-12-01 06:54:32+00:00 -->
 
+- [[#69](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/69)] [feature] added support to pass a complex dict ([MrImpossibru](https://github.com/MrImpossibru)) <!-- 2023-01-26 10:26:38+00:00 -->
 
 ## [1.8.1] - 2022-12-01
 <!-- 2022-12-01 06:54:32+00:00 < 2022-11-09 06:45:04+00:00 -->
