@@ -145,8 +145,9 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     cmd_args += ['-backend-config', '{}'.format(init_vars)]
   if tf_vars:
     cmd_args += list(
-        itertools.chain.from_iterable(
-            ("-var", "{}={}".format(k, v)) for k, v in tf_vars.items()))
+      itertools.chain.from_iterable(
+        ("-var", "{}={}".format(k, json.dumps(v) if isinstance(v, (dict, list)) else v)) for k, v in tf_vars.items()
+    ))
   if targets:
     cmd_args += [("-target={}".format(t)) for t in targets]
   if kw.get('tf_var_file'):
