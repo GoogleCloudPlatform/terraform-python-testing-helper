@@ -61,7 +61,6 @@ ARGS_TESTS = (
 
 @pytest.mark.parametrize("kwargs, expected", ARGS_TESTS)
 def test_args(kwargs, expected):
-  print(tftest.parse_args())
   assert tftest.parse_args() == []
   assert tftest.parse_args(**kwargs) == expected
 
