@@ -135,6 +135,8 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     cmd_args += ['-plugin-dir', kw['plugin_dir']]
   if kw.get('refresh') is False:
     cmd_args.append('-refresh=false')
+  if kw.get('state'):
+    cmd_args += ['-state', kw['state']]
   if kw.get('upgrade'):
     cmd_args.append('-upgrade')
   if isinstance(init_vars, dict):
@@ -595,7 +597,7 @@ class TerraformTest(object):
 
   @_cache
   def plan(self, input=False, color=False, refresh=True, tf_vars=None,
-           targets=None, output=False, tf_var_file=None, use_cache=False, **kw):
+           targets=None, output=False, tf_var_file=None, state=None, use_cache=False, **kw):
     """
     Run Terraform plan command, optionally returning parsed plan output.
 
@@ -608,10 +610,11 @@ class TerraformTest(object):
         and its dependencies
       output: Determines if output will be returned.
       tf_var_file: Path to terraform variable configuration file relative to `self.tfdir`.
+      state: Path to state file to use when reading the prior state snapshot.
     """
     cmd_args = parse_args(input=input, color=color, refresh=refresh,
                           tf_vars=tf_vars, targets=targets,
-                          tf_var_file=tf_var_file, **kw)
+                          tf_var_file=tf_var_file, state=state, **kw)
     if not output:
       return self.execute_command('plan', *cmd_args).out
     with tempfile.NamedTemporaryFile() as fp:
