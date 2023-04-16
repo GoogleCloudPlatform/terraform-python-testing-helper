@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+<!-- None < 2023-01-26 11:16:58+00:00 -->
+
+## [1.8.3] - 2023-04-16
+
+- [[#70](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/70)] Parse state flag ([andrewesweet](https://github.com/andrewesweet))
+
 ## [1.8.2] - 2023-01-26
+<!-- 2023-01-26 11:16:58+00:00 < 2022-12-01 06:54:32+00:00 -->
 
 - [[#69](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/69)] [feature] added support to pass a complex dict ([MrImpossibru](https://github.com/MrImpossibru)) <!-- 2023-01-26 10:26:38+00:00 -->
 

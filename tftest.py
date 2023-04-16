@@ -43,7 +43,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import List
 
-__version__ = '1.8.2'
+__version__ = '1.8.3'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -107,8 +107,7 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   ]
   for arg in _TG_KV_ARGS:
     if kw.get(f"tg_{arg}"):
-      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}',
-                   kw[f"tg_{arg}"]]
+      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}', kw[f"tg_{arg}"]]
   if kw.get('tg_parallelism'):
     cmd_args.append(f'--terragrunt-parallelism {kw["tg_parallelism"]}')
   if isinstance(kw.get('tg_override_attr'), dict):
@@ -149,9 +148,10 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     cmd_args += list(
         itertools.chain.from_iterable(
             ("-var",
-             "{}={}".format(k, json.dumps(v) if isinstance(v, (dict, list)) else v))
-            for k, v in tf_vars.items()
-        ))
+             "{}={}".format(k,
+                            json.dumps(v) if isinstance(v, (dict,
+                                                            list)) else v))
+            for k, v in tf_vars.items()))
   if targets:
     cmd_args += [("-target={}".format(t)) for t in targets]
   if kw.get('tf_var_file'):
@@ -329,8 +329,7 @@ class TerraformTest(object):
     self.env = os.environ.copy()
     self.tg_run_all = False
     self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
-    self._output_formatter = lambda out: TerraformValueDict(
-        json.loads(out))
+    self._output_formatter = lambda out: TerraformValueDict(json.loads(out))
     self.enable_cache = enable_cache
     if not cache_dir:
       self.cache_dir = Path(os.path.dirname(
@@ -365,13 +364,11 @@ class TerraformTest(object):
     for tg_dir in glob.glob(path, recursive=True):
       if os.path.isdir(tg_dir):
         shutil.rmtree(tg_dir, onerror=remove_readonly)
-    _LOGGER.debug(
-        'Restoring original TF files after prevent destroy changes')
+    _LOGGER.debug('Restoring original TF files after prevent destroy changes')
     if restore_files:
       for bkp_file in Path(tfdir).rglob('*.bkp'):
         try:
-          shutil.copy(str(bkp_file),
-                      f'{str(bkp_file).strip(".bkp")}')
+          shutil.copy(str(bkp_file), f'{str(bkp_file).strip(".bkp")}')
         except (IOError, OSError):
           _LOGGER.exception(
               f'Unable to restore terraform file {bkp_file.resolve()}')
@@ -384,12 +381,12 @@ class TerraformTest(object):
     """Make relative path absolute from base dir."""
     return path if os.path.isabs(path) else os.path.join(self._basedir, path)
 
-  def _dirhash(self, directory, hash, ignore_hidden=False, exclude_directories=[], excluded_extensions=[]):
+  def _dirhash(self, directory, hash, ignore_hidden=False,
+               exclude_directories=[], excluded_extensions=[]):
     """Returns hash of directory's file contents"""
     assert Path(directory).is_dir()
     try:
-      dir_iter = sorted(Path(directory).iterdir(),
-                        key=lambda p: str(p).lower())
+      dir_iter = sorted(Path(directory).iterdir(), key=lambda p: str(p).lower())
     except FileNotFoundError:
       return hash
     for path in dir_iter:
@@ -403,7 +400,8 @@ class TerraformTest(object):
             hash.update(chunk)
       elif path.is_dir() and path.name not in exclude_directories:
         hash = self._dirhash(path, hash, ignore_hidden=ignore_hidden,
-                             exclude_directories=exclude_directories, excluded_extensions=excluded_extensions)
+                             exclude_directories=exclude_directories,
+                             excluded_extensions=excluded_extensions)
     return hash
 
   def generate_cache_hash(self, method_kwargs):
@@ -423,18 +421,23 @@ class TerraformTest(object):
       if path_param in method_kwargs:
         if isinstance(method_kwargs[path_param], list):
           params[path_param] = [
-              sha1(open(fp, 'rb').read()).hexdigest() for fp in method_kwargs[path_param]]
+              sha1(open(fp, 'rb').read()).hexdigest()
+              for fp in method_kwargs[path_param]
+          ]
         else:
           params[path_param] = sha1(
               open(method_kwargs[path_param], 'rb').read()).hexdigest()
 
     # creates hash of all file content within tfdir
     # excludes .terraform/, hidden files, tfstate files from being used for hash
-    params["tfdir"] = self._dirhash(
-        self.tfdir, sha1(), ignore_hidden=True, exclude_directories=[".terraform"], excluded_extensions=['.backup', '.tfstate']).hexdigest()
+    params["tfdir"] = self._dirhash(self.tfdir, sha1(), ignore_hidden=True,
+                                    exclude_directories=[".terraform"],
+                                    excluded_extensions=['.backup', '.tfstate'
+                                                        ]).hexdigest()
 
-    return sha1(json.dumps(params, sort_keys=True,
-                           default=str).encode("cp037")).hexdigest() + ".pickle"
+    return sha1(
+        json.dumps(params, sort_keys=True,
+                   default=str).encode("cp037")).hexdigest() + ".pickle"
 
   def _cache(func):
 
@@ -597,7 +600,8 @@ class TerraformTest(object):
 
   @_cache
   def plan(self, input=False, color=False, refresh=True, tf_vars=None,
-           targets=None, output=False, tf_var_file=None, state=None, use_cache=False, **kw):
+           targets=None, output=False, tf_var_file=None, state=None,
+           use_cache=False, **kw):
     """
     Run Terraform plan command, optionally returning parsed plan output.
 
@@ -629,8 +633,7 @@ class TerraformTest(object):
     try:
       return self._plan_formatter(result.out)
     except json.JSONDecodeError as e:
-      raise TerraformTestError(
-          'Error decoding plan output: {}'.format(e))
+      raise TerraformTestError('Error decoding plan output: {}'.format(e))
 
   @_cache
   def apply(self, input=False, color=False, auto_approve=True, tf_vars=None,
