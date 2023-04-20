@@ -705,7 +705,7 @@ class TerraformTest(object):
     retcode = None
     full_output_lines = []
     try:
-      stderr_mode = subprocess.STDOUT if os.name = 'nt' else subprocess.PIPE
+      stderr_mode = subprocess.STDOUT if os.name == 'nt' else subprocess.PIPE
       p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
                            stderr=stderr_mode, cwd=self.tfdir, env=self.env,
                            universal_newlines=True, encoding='utf-8',
