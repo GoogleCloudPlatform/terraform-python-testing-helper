@@ -386,7 +386,7 @@ class TerraformTest(object):
     """Returns hash of directory's file contents"""
     assert Path(directory).is_dir()
     try:
-      dir_iter = sorted(Path(directory).iterdir(), 
+      dir_iter = sorted(Path(directory).iterdir(),
                         key=lambda p: str(p).lower())
     except FileNotFoundError:
       return hash
