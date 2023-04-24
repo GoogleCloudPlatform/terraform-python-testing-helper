@@ -386,7 +386,8 @@ class TerraformTest(object):
     """Returns hash of directory's file contents"""
     assert Path(directory).is_dir()
     try:
-      dir_iter = sorted(Path(directory).iterdir(), key=lambda p: str(p).lower())
+      dir_iter = sorted(Path(directory).iterdir(),
+                        key=lambda p: str(p).lower())
     except FileNotFoundError:
       return hash
     for path in dir_iter:
@@ -433,7 +434,7 @@ class TerraformTest(object):
     params["tfdir"] = self._dirhash(self.tfdir, sha1(), ignore_hidden=True,
                                     exclude_directories=[".terraform"],
                                     excluded_extensions=['.backup', '.tfstate'
-                                                        ]).hexdigest()
+                                                         ]).hexdigest()
 
     return sha1(
         json.dumps(params, sort_keys=True,
@@ -458,7 +459,7 @@ class TerraformTest(object):
         return func(self, **kwargs)
 
       cache_dir = self.cache_dir / \
-          Path(self.tfdir.strip("/")) / Path(func.__name__)
+          Path(sha1(self.tfdir.encode("cp037")).hexdigest()) / Path(func.__name__)
       cache_dir.mkdir(parents=True, exist_ok=True)
 
       hash_filename = self.generate_cache_hash(kwargs)
