@@ -459,7 +459,7 @@ class TerraformTest(object):
         return func(self, **kwargs)
 
       cache_dir = self.cache_dir / \
-          Path(self.tfdir.strip("/")) / Path(func.__name__)
+          Path(sha1(self.tfdir.encode("cp037")).hexdigest()) / Path(func.__name__)
       cache_dir.mkdir(parents=True, exist_ok=True)
 
       hash_filename = self.generate_cache_hash(kwargs)
