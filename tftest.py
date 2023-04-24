@@ -43,7 +43,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import List
 
-__version__ = '1.8.3'
+__version__ = '1.8.4'
 
 _LOGGER = logging.getLogger('tftest')
 

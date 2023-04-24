@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-<!-- None < 2023-01-26 11:16:58+00:00 -->
+## [1.8.4] - 2023-04-24
+
+- [[#72](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/72)] Stop Windows hangs when last output is on stderr ([andrewesweet](https://github.com/andrewesweet)) <!-- 2023-04-24 14:37:57+00:00 -->
+- [[#71](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/71)] Make cache directory path Windows friendly ([andrewesweet](https://github.com/andrewesweet)) <!-- 2023-04-24 14:36:36+00:00 -->
 
 ## [1.8.3] - 2023-04-16
 
@@ -200,7 +203,9 @@ All notable changes to this project will be documented in this file.
 <!-- 2019-09-10 06:58:18+00:00 < None -->
 
 <!-- markdown-link-check-disable -->
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.2...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.4...HEAD
+[1.8.4]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.3...v1.8.4
+[1.8.3]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.2...v1.8.3
 [1.8.2]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.7.7...v1.8.0
