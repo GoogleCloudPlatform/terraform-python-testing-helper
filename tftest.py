@@ -138,6 +138,8 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     cmd_args += ['-state', kw['state']]
   if kw.get('upgrade'):
     cmd_args.append('-upgrade')
+  if kw.get('parallelism'):
+    cmd_args += ['-parallelism={}'.format(kw['parallelism'])]
   if isinstance(init_vars, dict):
     cmd_args += [
         '-backend-config={}={}'.format(k, v) for k, v in init_vars.items()
