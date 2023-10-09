@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     https://www.apache.org/licenses/LICENSE-2.0
+#   https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,13 @@ import tftest
 def plan_out(fixtures_dir):
   import json
   with open('%s/plan_output.json' % fixtures_dir) as fp:
+    return tftest.TerraformPlanOutput(json.load(fp))
+
+
+@pytest.fixture(scope="module")
+def plan_out_no_prior(fixtures_dir):
+  import json
+  with open('%s/plan_output_no_prior.json' % fixtures_dir) as fp:
     return tftest.TerraformPlanOutput(json.load(fp))
 
 
@@ -86,3 +93,15 @@ def test_plan_stdout(fixtures_dir):
   tf = tftest.TerraformTest('plan_no_resource_changes', fixtures_dir)
   result = tf.plan(output=False)
   assert 'just_an_output = "Hello, plan!"' in result
+
+
+def test_plan_prior_state(plan_out):
+  prior_resources = plan_out.prior_resources
+  assert len(prior_resources) == 1
+  assert prior_resources['data.google_client_config.current']['type'] == 'google_client_config'
+  assert prior_resources['data.google_client_config.current']['values']['description'] == 'foo-value'
+
+
+def test_plan_no_prior_state(plan_out_no_prior):
+  prior_resources = plan_out_no_prior.prior_resources
+  assert not prior_resources

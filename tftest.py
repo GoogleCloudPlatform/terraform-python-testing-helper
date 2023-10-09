@@ -242,6 +242,10 @@ class TerraformPlanOutput(TerraformJSONBase):
     # there might be no variables defined
     self.variables = TerraformValueDict(raw.get('variables', {}))
 
+    prior_state = raw.get('prior_state', {})
+    values = prior_state.get('values', {})
+    self.prior_root_module = TerraformPlanModule(values.get('root_module', {}))
+
   @property
   def resources(self):
     return self.root_module.resources
@@ -249,6 +253,10 @@ class TerraformPlanOutput(TerraformJSONBase):
   @property
   def modules(self):
     return self.root_module.child_modules
+
+  @property
+  def prior_resources(self):
+    return self.prior_root_module.resources
 
   def __getattr__(self, name):
     return self._raw[name]
