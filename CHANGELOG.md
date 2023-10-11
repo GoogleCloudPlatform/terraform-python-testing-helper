@@ -5,8 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.5] - 2023-10-11
 <!-- None < 2023-04-24 14:41:58+00:00 -->
 
+- [[#76](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/76)] feat(75): provide access to prior state resources if available ([fergoid](https://github.com/fergoid)) <!-- 2023-10-11 08:14:34+00:00 -->
 
 ## [1.8.4] - 2023-04-24
 <!-- 2023-04-24 14:41:58+00:00 < 2023-04-16 10:08:36+00:00 -->
