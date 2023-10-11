@@ -93,28 +93,6 @@
       "after_unknown": false
     }
   },
-  "prior_state": {
-    "format_version": "0.1",
-    "terraform_version": "0.12.6",
-    "values": {
-      "root_module": {
-        "resources": [
-          {
-            "address": "data.google_client_config.current",
-            "mode": "data",
-            "type": "google_client_config",
-            "name": "current",
-            "provider_name": "registry.terraform.io/hashicorp/google",
-            "schema_version": 0,
-            "values": {
-              "description": "foo-value"
-            },
-            "sensitive_values": {}
-          }
-        ]
-      }
-    }
-  },
   "configuration": {
     "provider_config": {
       "google": {
