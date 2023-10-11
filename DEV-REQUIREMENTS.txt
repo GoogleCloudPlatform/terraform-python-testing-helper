@@ -1,2 +1,2 @@
-autopep8
-pytest>=5.2.2
+autopep8>=2.0
+pytest>=7.2
