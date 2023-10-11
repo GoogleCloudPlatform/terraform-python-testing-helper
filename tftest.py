@@ -107,7 +107,8 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   ]
   for arg in _TG_KV_ARGS:
     if kw.get(f"tg_{arg}"):
-      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}', kw[f"tg_{arg}"]]
+      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}',
+                   kw[f"tg_{arg}"]]
   if kw.get('tg_parallelism'):
     cmd_args.append(f'--terragrunt-parallelism {kw["tg_parallelism"]}')
   if isinstance(kw.get('tg_override_attr'), dict):
@@ -241,10 +242,8 @@ class TerraformPlanOutput(TerraformJSONBase):
         (v['address'], v) for v in self._raw.get('resource_changes', {}))
     # there might be no variables defined
     self.variables = TerraformValueDict(raw.get('variables', {}))
-
-    prior_state = raw.get('prior_state', {})
-    values = prior_state.get('values', {})
-    self.prior_root_module = TerraformPlanModule(values.get('root_module', {}))
+    self.prior_root_module = TerraformPlanModule(
+        raw.get('prior_state', {}).get('values', {}).get('root_module', {}))
 
   @property
   def resources(self):
@@ -337,7 +336,8 @@ class TerraformTest(object):
     self.env = os.environ.copy()
     self.tg_run_all = False
     self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
-    self._output_formatter = lambda out: TerraformValueDict(json.loads(out))
+    self._output_formatter = lambda out: TerraformValueDict(
+        json.loads(out))
     self.enable_cache = enable_cache
     if not cache_dir:
       self.cache_dir = Path(os.path.dirname(
@@ -372,11 +372,13 @@ class TerraformTest(object):
     for tg_dir in glob.glob(path, recursive=True):
       if os.path.isdir(tg_dir):
         shutil.rmtree(tg_dir, onerror=remove_readonly)
-    _LOGGER.debug('Restoring original TF files after prevent destroy changes')
+    _LOGGER.debug(
+        'Restoring original TF files after prevent destroy changes')
     if restore_files:
       for bkp_file in Path(tfdir).rglob('*.bkp'):
         try:
-          shutil.copy(str(bkp_file), f'{str(bkp_file).strip(".bkp")}')
+          shutil.copy(str(bkp_file),
+                      f'{str(bkp_file).strip(".bkp")}')
         except (IOError, OSError):
           _LOGGER.exception(
               f'Unable to restore terraform file {bkp_file.resolve()}')
@@ -467,7 +469,8 @@ class TerraformTest(object):
         return func(self, **kwargs)
 
       cache_dir = self.cache_dir / \
-          Path(sha1(self.tfdir.encode("cp037")).hexdigest()) / Path(func.__name__)
+          Path(sha1(self.tfdir.encode("cp037")).hexdigest()) / \
+          Path(func.__name__)
       cache_dir.mkdir(parents=True, exist_ok=True)
 
       hash_filename = self.generate_cache_hash(kwargs)
@@ -642,7 +645,8 @@ class TerraformTest(object):
     try:
       return self._plan_formatter(result.out)
     except json.JSONDecodeError as e:
-      raise TerraformTestError('Error decoding plan output: {}'.format(e))
+      raise TerraformTestError(
+          'Error decoding plan output: {}'.format(e))
 
   @_cache
   def apply(self, input=False, color=False, auto_approve=True, tf_vars=None,
@@ -715,8 +719,8 @@ class TerraformTest(object):
     full_output_lines = []
     try:
       stderr_mode = subprocess.STDOUT if os.name == 'nt' else subprocess.PIPE
-      p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
-                           stderr=stderr_mode, cwd=self.tfdir, env=self.env,
+      p = subprocess.Popen(cmdline, stdout=subprocess.PIPE, stderr=stderr_mode,
+                           cwd=self.tfdir, env=self.env,
                            universal_newlines=True, encoding='utf-8',
                            errors='ignore')
       while True:

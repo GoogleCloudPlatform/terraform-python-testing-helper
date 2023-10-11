@@ -36,14 +36,16 @@ def run_all_plan_output(fixtures_dir):
 
 @pytest.fixture
 def plan_foo_output(fixtures_dir):
-  tg = tftest.TerragruntTest(os.path.join('tg_apply_all', 'foo'), fixtures_dir)
+  tg = tftest.TerragruntTest(os.path.join(
+      'tg_apply_all', 'foo'), fixtures_dir)
   tg.setup()
   return tg.plan(output=True)
 
 
 @pytest.fixture
 def bar_output(fixtures_dir):
-  tg = tftest.TerragruntTest(os.path.join('tg_apply_all', 'bar'), fixtures_dir)
+  tg = tftest.TerragruntTest(os.path.join(
+      'tg_apply_all', 'bar'), fixtures_dir)
   tg.setup()
   tg.apply(output=False, tg_non_interactive=True)
   yield tg.output()
