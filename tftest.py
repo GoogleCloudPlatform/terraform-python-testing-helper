@@ -365,9 +365,15 @@ class TerraformTest(object):
     path = os.path.join(tfdir, '.terraform')
     if os.path.isdir(path):
       shutil.rmtree(path, onerror=remove_readonly)
+    path = os.path.join(tfdir, '.terraform.lock.hcl')
+    if os.path.isfile(path):
+      os.unlink(path)
     path = os.path.join(tfdir, 'terraform.tfstate')
     if os.path.isfile(path):
       os.unlink(path)
+    for path in glob.glob(os.path.join(tfdir, 'terraform.tfstate.backup*')):
+      if os.path.isfile(path):
+        os.unlink(path)
     path = os.path.join(tfdir, '**', '.terragrunt-cache*')
     for tg_dir in glob.glob(path, recursive=True):
       if os.path.isdir(tg_dir):
