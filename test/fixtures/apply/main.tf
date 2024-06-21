@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-data "template_file" "sample" {
-  for_each = toset(var.names)
-  template = "sample template $${name}"
-  vars = {
-    name = each.key
-  }
-}
-
 resource "null_resource" "sample" {
   for_each = toset(var.names)
   triggers = {
     name     = each.key
-    template = data.template_file.sample[each.key].rendered
+    template = templatefile("${path.module}/template.tftpl", { name = each.key })
   }
 }
