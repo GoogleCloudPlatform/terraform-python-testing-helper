@@ -333,7 +333,7 @@ class TerraformTest(object):
     self.binary = binary
     self.tfdir = self._abspath(tfdir)
     self._env = env or {}
-    self.env = os.environ.copy()
+    self.env = { key: value for key, value in os.environ.items() if key != 'TF_LOG' }
     self.tg_run_all = False
     self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
     self._output_formatter = lambda out: TerraformValueDict(
