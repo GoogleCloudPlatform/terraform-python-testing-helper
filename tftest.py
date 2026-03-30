@@ -41,7 +41,6 @@ import weakref
 from functools import partial
 from hashlib import sha1
 from pathlib import Path
-from typing import List
 
 __version__ = '1.8.5'
 
@@ -61,32 +60,6 @@ class TerraformTestError(Exception):
     return self.args[1] if len(self.args) > 1 else None
 
 
-_TG_BOOL_ARGS = [
-    "no_auto_init",
-    "no_auto_retry",
-    "source_update",
-    "ignore_dependency_errors",
-    "ignore_dependency_order",
-    "include_external_dependencies",
-    "check",
-    "debug",
-    'non_interactive',
-    'ignore_external_dependencies',
-]
-
-_TG_KV_ARGS = [
-    "iam_role",
-    "config",
-    "tfpath",
-    "working_dir",
-    "download_dir",
-    "source",
-    "exclude_dir",
-    "include_dir",
-    "hclfmt_file",
-]
-
-
 def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   """Convert method arguments for use in Terraform commands.
 
@@ -100,22 +73,6 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
     A list of command arguments for use with subprocess.
   """
   cmd_args = []
-
-  cmd_args += [
-      f'--terragrunt-{arg.replace("_", "-")}' for arg in _TG_BOOL_ARGS
-      if kw.get(f"tg_{arg}")
-  ]
-  for arg in _TG_KV_ARGS:
-    if kw.get(f"tg_{arg}"):
-      cmd_args += [f'--terragrunt-{arg.replace("_", "-")}',
-                   kw[f"tg_{arg}"]]
-  if kw.get('tg_parallelism'):
-    cmd_args.append(f'--terragrunt-parallelism {kw["tg_parallelism"]}')
-  if isinstance(kw.get('tg_override_attr'), dict):
-    cmd_args += [
-        '--terragrunt-override-attr={}={}'.format(k, v)
-        for k, v in kw.get('tg_override_attr').items()
-    ]
 
   if kw.get('auto_approve'):
     cmd_args.append('-auto-approve')
@@ -334,7 +291,6 @@ class TerraformTest(object):
     self.tfdir = self._abspath(tfdir)
     self._env = env or {}
     self.env = os.environ.copy()
-    self.tg_run_all = False
     self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
     self._output_formatter = lambda out: TerraformValueDict(
         json.loads(out))
@@ -349,7 +305,7 @@ class TerraformTest(object):
 
   @classmethod
   def _cleanup(cls, tfdir, filenames, deep=True, restore_files=False):
-    """Remove linked files, .terraform and/or .terragrunt-cache folder at instance deletion."""
+    """Remove linked files and .terraform folder at instance deletion."""
 
     def remove_readonly(func, path, excinfo):
       _LOGGER.warning(f'Issue deleting file {path}, caused by {excinfo}')
@@ -374,10 +330,6 @@ class TerraformTest(object):
     for path in glob.glob(os.path.join(tfdir, 'terraform.tfstate.backup*')):
       if os.path.isfile(path):
         os.unlink(path)
-    path = os.path.join(tfdir, '**', '.terragrunt-cache*')
-    for tg_dir in glob.glob(path, recursive=True):
-      if os.path.isdir(tg_dir):
-        shutil.rmtree(tg_dir, onerror=remove_readonly)
     _LOGGER.debug(
         'Restoring original TF files after prevent destroy changes')
     if restore_files:
@@ -496,8 +448,7 @@ class TerraformTest(object):
 
       if out:
         # the hash value will now include any changes
-        # to the tfdir directory including any terragrunt
-        # generated files
+        # to the tfdir directory
         hash_filename = self.generate_cache_hash(kwargs)
         cache_key = cache_dir / hash_filename
         _LOGGER.debug("Cache key: %s", cache_key)
@@ -641,10 +592,7 @@ class TerraformTest(object):
       return self.execute_command('plan', *cmd_args).out
     with tempfile.NamedTemporaryFile() as fp:
       fp.close()
-    # for tg we need to specify a temp name that is relative for the output to go into each
-    # of the .terragrunt-cache, then plan / show would work, otherwise it overwrites each other!
-    temp_file = fp.name if len(self._tg_ra()) == 0 else os.path.basename(
-        fp.name)
+    temp_file = fp.name
     cmd_args.append('-out={}'.format(temp_file))
     self.execute_command('plan', *cmd_args)
     result = self.execute_command('show', '-no-color', '-json', temp_file)
@@ -718,7 +666,7 @@ class TerraformTest(object):
   def execute_command(self, cmd, *cmd_args):
     """Run arbitrary Terraform command."""
     _LOGGER.debug([cmd, cmd_args])
-    cmdline = [self.binary, *self._tg_ra(), cmd]
+    cmdline = [self.binary, cmd]
     cmdline += cmd_args
     _LOGGER.info(cmdline)
     retcode = None
@@ -748,59 +696,3 @@ class TerraformTest(object):
       _LOGGER.critical(message)
       raise TerraformTestError(message, err)
     return TerraformCommandOutput(retcode, full_output, err)
-
-  def _tg_ra(self) -> List[str]:
-    """if run_all return ['run-all'] else [] """
-    return ['run-all'] if self._is_tg() and self.tg_run_all else []
-
-  def _is_tg(self) -> bool:
-    """based on the binary set determines if we are running terragrunt"""
-    return self.binary.endswith('terragrunt')
-
-
-def _parse_run_all_out(output: str, formatter: TerraformJSONBase) -> str:
-  """
-    run-all output a bunch of jsons back to back in one string(no comma),
-    this convert the output to a valid json (put b2b jsons into a list)
-  Args:
-    output: the back to back jsons in a string
-    formatter: output format, could be TerraformValueDict or TerraformPlanOutput
-  Returns:
-    convert the input into a list that is a valid json
-  """
-  dicts = json.loads("[" + re.sub(r"\}\s*\{", "}, {", output) + "]")
-  return [formatter(d) for d in dicts]
-
-
-class TerragruntTest(TerraformTest):
-
-  def __init__(self, tfdir, basedir=None, binary='terragrunt', env=None,
-               tg_run_all=False, enable_cache=False, cache_dir=None):
-    """A helper class that could be used for testing terragrunt
-
-    Most operations that apply to :func:`~TerraformTest` also apply to this class.
-    Notice that to use this class for Terragrunt run-all, `tg_run_all` needs to be set to
-    True.  The class would then only be used just for run-all.  If you need individual
-    Terragrunt module testing, create another instance of this helper with
-    tg_run_all=False (default)
-
-    Args:
-      tfdir: the Terraform module directory to test, either an absolute path, or
-             relative to basedir.
-      basedir: optional base directory to use for relative paths, defaults to the
-               directory above the one this module lives in.
-      binary: (Optional) path to terragrunt command.
-      env: a dict with custom environment variables to pass to terraform.
-      tg_run_all: whether the test is for terragrunt run-all, default to False
-      enable_cache: Determines if the caching enabled for specific methods
-      cache_dir: optional base directory to use for caching, defaults to
-        the directory of the python file that instantiates this class
-    """
-    TerraformTest.__init__(self, tfdir, basedir, binary, env, enable_cache,
-                           cache_dir)
-    self.tg_run_all = tg_run_all
-    if self.tg_run_all:
-      self._plan_formatter = partial(_parse_run_all_out,
-                                     formatter=TerraformPlanOutput)
-      self._output_formatter = partial(_parse_run_all_out,
-                                       formatter=TerraformValueDict)

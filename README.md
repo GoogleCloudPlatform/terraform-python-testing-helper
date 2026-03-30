@@ -46,38 +46,6 @@ def test_modules(plan):
   assert res['values']['location'] == plan.variables['gcs_location']
 ```
 
-## Terragrunt support
-
-Support for Terragrunt actually follows the same principle of the thin `TerraformTest` wrapper.
-
-Please see the following example for how to use it:
-
-```python
-import pytest
-import tftest
-
-
-@pytest.fixture
-def run_all_apply_out(fixtures_dir):
-  # notice for run-all, you need to specify when TerragruntTest is constructed
-  tg = tftest.TerragruntTest('tg_apply_all', fixtures_dir, tg_run_all=True)
-  # the rest is very similar to how you use TerraformTest
-  tg.setup()
-  # to use --terragrunt-<option>, pass in tg_<option in snake case>
-  tg.apply(output=False, tg_non_interactive=True)
-  yield tg.output()
-  tg.destroy(auto_approve=True, tg_non_interactive=True)
-
-  
-def test_run_all_apply(run_all_apply_out):
-    triggers = [o["triggers"] for o in run_all_apply_out]
-    assert [{'name': 'foo', 'template': 'sample template foo'}] in triggers
-    assert [{'name': 'bar', 'template': 'sample template bar'}] in triggers
-    assert [{'name': 'one', 'template': 'sample template one'},
-            {'name': 'two', 'template': 'sample template two'}] in triggers
-    assert len(run_all_apply_out) == 3
-```
-
 ## Caching
 
 The `TerraformTest` `setup`, `init`, `plan`, `apply`, `output` and `destroy` methods have the ability to cache it's associate output to a local `.tftest-cache` directory. For subsequent calls of the method, the cached value can be returned instead of calling the actual underlying `terraform` command. Using the cache value can be significantly faster than running the Terraform command again especially if the command is time-intensive.
