@@ -36,7 +36,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-__version__ = '1.8.6'
+__version__ = '1.8.7'
 
 _LOGGER = logging.getLogger('tftest')
 
