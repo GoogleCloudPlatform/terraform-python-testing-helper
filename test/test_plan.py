@@ -21,14 +21,14 @@ import tftest
 @pytest.fixture(scope="module")
 def plan_out(fixtures_dir):
   import json
-  with open('%s/plan_output.json' % fixtures_dir) as fp:
+  with open(f'{fixtures_dir}/plan_output.json') as fp:
     return tftest.TerraformPlanOutput(json.load(fp))
 
 
 @pytest.fixture(scope="module")
 def plan_out_no_prior(fixtures_dir):
   import json
-  with open('%s/plan_output_no_prior.json' % fixtures_dir) as fp:
+  with open(f'{fixtures_dir}/plan_output_no_prior.json') as fp:
     return tftest.TerraformPlanOutput(json.load(fp))
 
 

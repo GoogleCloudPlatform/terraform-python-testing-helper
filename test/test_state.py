@@ -21,7 +21,7 @@ import tftest
 @pytest.fixture
 def state(fixtures_dir):
   import json
-  with open('%s/state.json' % fixtures_dir) as fp:
+  with open(f'{fixtures_dir}/state.json') as fp:
     return tftest.TerraformState(json.load(fp))
 
 
