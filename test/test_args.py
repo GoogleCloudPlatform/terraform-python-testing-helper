@@ -156,3 +156,7 @@ def test_var_args():
 def test_targets():
   assert tftest.parse_args(targets=['one', 'two']) == sorted(
       ['-target=one', '-target=two'])
+
+
+def test_parallelism_arg():
+  assert tftest.parse_args(parallelism=10) == ['-parallelism', 10]

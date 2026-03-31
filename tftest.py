@@ -90,6 +90,7 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
       cmd_args.append(flag)
 
   kv_flags = {
+      'parallelism': '-parallelism',
       'plugin_dir': '-plugin-dir',
       'state': '-state',
   }
@@ -286,7 +287,7 @@ class TerraformTest(object):
     self.binary = binary
     self.tfdir = self._abspath(tfdir)
     self._env = env or {}
-    self.env = os.environ.copy()
+    self.env = {k: v for k, v in os.environ.items() if k != 'TF_LOG'}
     self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
     self._output_formatter = lambda out: TerraformValueDict(json.loads(out))
     self.enable_cache = enable_cache
