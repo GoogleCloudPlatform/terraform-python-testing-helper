@@ -3,12 +3,11 @@
 All notable changes to this project will be documented in this file.
 <!-- markdownlint-disable MD024 -->
 
-## [Unreleased]
+## [Unreleased] <!-- from: 2023-10-11 08:39:19+00:00 to: None since: v1.8.5 -->
 
-<!-- None < 2023-10-11 08:39:19+00:00 -->
+## [1.8.7] - 2026-03-31
 
-## [1.8.6] - 2026-03-31
-
+- [[#91](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/91)] Fix: preserve absolute Path object for tfdir ([ludoo](https://github.com/ludoo)) <!-- 2026-03-31 07:48:28+00:00 -->
 - [[#90](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/90)] Feat: port changes from PR #73 and #87 ([ludoo](https://github.com/ludoo)) <!-- 2026-03-31 06:09:00+00:00 -->
 - [[#89](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/89)] Drop Terragrunt support and modernize Python codebase ([ludoo](https://github.com/ludoo)) <!-- 2026-03-31 06:04:14+00:00 -->
 - [[#82](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/82)] Clean up terraform runtime files ([elstak](https://github.com/elstak)) <!-- 2024-06-21 11:38:50+00:00 -->
@@ -217,8 +216,8 @@ All notable changes to this project will be documented in this file.
 <!-- 2019-09-10 06:58:18+00:00 < None -->
 
 <!-- markdown-link-check-disable -->
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.6...HEAD
-[1.8.6]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.5...v1.8.6
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.7...HEAD
+[1.8.7]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.4...v1.8.7
 [1.8.5]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.4...v1.8.5
 [1.8.4]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.3...v1.8.4
 [1.8.3]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.2...v1.8.3
