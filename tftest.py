@@ -349,7 +349,7 @@ class TerraformTest(object):
     """Make relative path absolute from base dir."""
     path_obj = Path(path)
     if path_obj.is_absolute():
-      return str(path_obj)
+      return path
     return str(Path(self._basedir) / path)
 
   def _dirhash(self, directory, hash, ignore_hidden=False,
@@ -429,7 +429,7 @@ class TerraformTest(object):
         return func(self, **kwargs)
 
       cache_dir = self.cache_dir / \
-          Path(sha1(self.tfdir.encode("cp037")).hexdigest()) / \
+          Path(sha1(str(self.tfdir).encode("cp037")).hexdigest()) / \
           Path(func.__name__)
       cache_dir.mkdir(parents=True, exist_ok=True)
 
