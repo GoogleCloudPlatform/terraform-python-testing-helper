@@ -3,8 +3,8 @@ name: Publish to PyPI
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to publish (e.g. 1.9.0)'
+      tag:
+        description: 'Git tag to publish (e.g. v1.9.0)'
         required: true
         type: string
 
@@ -19,7 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: v${{ github.event.inputs.version }}
+        ref: ${{ github.event.inputs.tag }}
 
     - name: Set up Python
       uses: actions/setup-python@v5
