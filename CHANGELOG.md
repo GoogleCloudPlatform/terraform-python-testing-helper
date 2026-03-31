@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+<!-- None < 2023-10-11 08:39:19+00:00 -->
+
+## [1.8.6] - 2026-03-31
+
+- [[#90](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/90)] Feat: port changes from PR #73 and #87 ([ludoo](https://github.com/ludoo)) <!-- 2026-03-31 06:09:00+00:00 -->
+- [[#89](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/89)] Drop Terragrunt support and modernize Python codebase ([ludoo](https://github.com/ludoo)) <!-- 2026-03-31 06:04:14+00:00 -->
+- [[#82](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/82)] Clean up terraform runtime files ([elstak](https://github.com/elstak)) <!-- 2024-06-21 11:38:50+00:00 -->
+
 ## [1.8.5] - 2023-10-11
 <!-- None < 2023-04-24 14:41:58+00:00 -->
 
@@ -209,7 +217,9 @@ All notable changes to this project will be documented in this file.
 <!-- 2019-09-10 06:58:18+00:00 < None -->
 
 <!-- markdown-link-check-disable -->
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.4...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.6...HEAD
+[1.8.6]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.5...v1.8.6
+[1.8.5]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.4...v1.8.5
 [1.8.4]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.3...v1.8.4
 [1.8.3]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.2...v1.8.3
 [1.8.2]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.1...v1.8.2
