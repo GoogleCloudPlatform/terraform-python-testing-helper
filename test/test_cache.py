@@ -53,26 +53,22 @@ def test_use_cache(tf):
   method only
   """
   for method in cache_methods:
-    with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
+    with patch.object(tf, 'execute_command',
+                      wraps=tf.execute_command) as mock_execute_command:
       for _ in range(2):
         getattr(tf, method)(use_cache=True)
       assert mock_execute_command.call_count == 1
 
 
 @pytest.mark.parametrize("tf", [
-    pytest.param(
-        True,
-        id="enable_cache"
-    ),
-    pytest.param(
-        False,
-        id="disable_cache"
-    ),
+    pytest.param(True, id="enable_cache"),
+    pytest.param(False, id="disable_cache"),
 ], indirect=True)
 def test_no_use_cache(tf):
   expected_call_count = 2
   for method in cache_methods:
-    with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
+    with patch.object(tf, 'execute_command',
+                      wraps=tf.execute_command) as mock_execute_command:
       for _ in range(expected_call_count):
         getattr(tf, method)(use_cache=False)
       assert mock_execute_command.call_count == expected_call_count
@@ -90,7 +86,8 @@ def test_use_cache_with_same_tf_var_file(tf, tmp_path):
   tf_vars_file.write_text(json.dumps({"foo": "old"}))
 
   for method in tf_var_file_methods:
-    with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
+    with patch.object(tf, 'execute_command',
+                      wraps=tf.execute_command) as mock_execute_command:
       for _ in range(2):
         getattr(tf, method)(use_cache=True, tf_var_file=tf_vars_file)
 
@@ -110,7 +107,8 @@ def test_use_cache_with_new_tf_var_file(tf, tmp_path):
 
   for method in tf_var_file_methods:
     tf_vars_file.write_text(json.dumps({"foo": "old"}))
-    with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
+    with patch.object(tf, 'execute_command',
+                      wraps=tf.execute_command) as mock_execute_command:
       for _ in range(expected_call_count):
         getattr(tf, method)(use_cache=True, tf_var_file=tf_vars_file)
         tf_vars_file.write_text(json.dumps({"foo": "new"}))
@@ -128,7 +126,8 @@ def test_use_cache_with_new_extra_files(tf, tmp_path):
   tf_vars_file = tmp_path / (str(uuid.uuid4()) + '.json')
   tf_vars_file.write_text(json.dumps({"foo": "old"}))
 
-  with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
+  with patch.object(tf, 'execute_command',
+                    wraps=tf.execute_command) as mock_execute_command:
     for _ in range(expected_call_count):
       tf.setup(use_cache=True, extra_files=[tf_vars_file])
       tf_vars_file.write_text(json.dumps({"foo": "new"}))
@@ -145,7 +144,8 @@ def test_use_cache_with_same_extra_files(tf, tmp_path):
   tf_vars_file = tmp_path / (str(uuid.uuid4()) + '.json')
   tf_vars_file.write_text(json.dumps({"foo": "old"}))
 
-  with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
+  with patch.object(tf, 'execute_command',
+                    wraps=tf.execute_command) as mock_execute_command:
     for _ in range(2):
       tf.setup(use_cache=True, extra_files=[tf_vars_file])
 
@@ -160,7 +160,8 @@ def test_use_cache_with_new_env(tf):
   """
   expected_call_count = 2
   for method in cache_methods:
-    with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
+    with patch.object(tf, 'execute_command',
+                      wraps=tf.execute_command) as mock_execute_command:
       for _ in range(expected_call_count):
         getattr(tf, method)(use_cache=True)
         tf._env["foo"] = "bar"
@@ -189,7 +190,8 @@ def test_use_cache_with_new_tf_content(tf, dummy_tf_filepath):
   """
   expected_call_count = 2
   for method in cache_methods:
-    with patch.object(tf, 'execute_command', wraps=tf.execute_command) as mock_execute_command:
+    with patch.object(tf, 'execute_command',
+                      wraps=tf.execute_command) as mock_execute_command:
       for _ in range(expected_call_count):
         getattr(tf, method)(use_cache=True)
         with open(dummy_tf_filepath, "w") as f:

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 "Test the plan output wrapper classes."
 
 import pytest
@@ -98,8 +97,10 @@ def test_plan_stdout(fixtures_dir):
 def test_plan_prior_state(plan_out):
   prior_resources = plan_out.prior_resources
   assert len(prior_resources) == 1
-  assert prior_resources['data.google_client_config.current']['type'] == 'google_client_config'
-  assert prior_resources['data.google_client_config.current']['values']['description'] == 'foo-value'
+  assert prior_resources['data.google_client_config.current'][
+      'type'] == 'google_client_config'
+  assert prior_resources['data.google_client_config.current']['values'][
+      'description'] == 'foo-value'
 
 
 def test_plan_no_prior_state(plan_out_no_prior):

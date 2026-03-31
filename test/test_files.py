@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 "Test fixture file setup and removal."
 
 import os
@@ -25,10 +24,10 @@ def test_setup_files():
       with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
         tf = tftest.TerraformTest(tmpdir)
         tf.setup(extra_files=[tmpfile.name])
-        assert os.path.exists(os.path.join(
-            tmpdir, os.path.basename(tmpfile.name)))
+        assert os.path.exists(
+            os.path.join(tmpdir, os.path.basename(tmpfile.name)))
         tf = None
-        assert not os.path.exists(os.path.join(
-            tmpdir, os.path.basename(tmpfile.name)))
+        assert not os.path.exists(
+            os.path.join(tmpdir, os.path.basename(tmpfile.name)))
     finally:
       os.unlink(tmpfile.name)
