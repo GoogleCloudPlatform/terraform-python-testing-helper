@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 "Test init and plan with prevent_destroy lifecycles"
 import logging
 from unittest.mock import mock_open, patch
@@ -40,20 +39,23 @@ def test_with_with_lifecycle_override(fixtures_dir):
 def test_raises_exception_if_file_backup_fails(mock_copy, fixtures_dir, caplog):
   caplog.set_level(logging.ERROR)
   tf = tftest.TerraformTest('prevent_destroy', fixtures_dir)
-  mock_copy.side_effect = [FileNotFoundError(
-      '[Errno 2] No such file or directory: "sddsdsds"')]
+  mock_copy.side_effect = [
+      FileNotFoundError('[Errno 2] No such file or directory: "sddsdsds"')
+  ]
   with pytest.raises(tftest.TerraformTestError):
     tf.setup(disable_prevent_destroy=True)
   assert caplog.messages[0].startswith('Unable to backup terraform file ')
 
 
 @patch('tftest.shutil.copy')
-def test_raises_exception_when_read_or_write_fails(mock_copy, fixtures_dir, caplog):
+def test_raises_exception_when_read_or_write_fails(mock_copy, fixtures_dir,
+                                                   caplog):
   caplog.set_level(logging.ERROR)
   tf = tftest.TerraformTest('prevent_destroy', fixtures_dir)
   with patch('builtins.open', mock_open(read_data='')) as mock_file:
     mock_file.return_value.write.side_effect = [
-        IOError('[Errno 13] Permission denied: "sddsdsds"')]
+        IOError('[Errno 13] Permission denied: "sddsdsds"')
+    ]
     with pytest.raises(tftest.TerraformTestError):
       tf.setup(disable_prevent_destroy=True)
   assert caplog.messages[0].startswith(

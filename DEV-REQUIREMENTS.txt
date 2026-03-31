@@ -1,2 +1,2 @@
-autopep8>=2.0
+yapf>=0.40
 pytest>=7.2

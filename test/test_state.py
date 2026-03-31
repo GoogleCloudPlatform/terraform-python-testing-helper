@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 "Test the Terraform state wrapper class."
 
 import pytest
@@ -21,7 +20,7 @@ import tftest
 @pytest.fixture
 def state(fixtures_dir):
   import json
-  with open('%s/state.json' % fixtures_dir) as fp:
+  with open(f'{fixtures_dir}/state.json') as fp:
     return tftest.TerraformState(json.load(fp))
 
 

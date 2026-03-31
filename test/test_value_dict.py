@@ -11,12 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 "Test the Terraform value dict wrapper class."
 
 import pytest
 import tftest
-
 
 _RAW = {'a': {'value': 1, 'sensitive': True}, 'b': {'value': 2}}
 
