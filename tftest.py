@@ -68,28 +68,35 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
   """
   cmd_args = []
 
-  if kw.get('auto_approve'):
-    cmd_args.append('-auto-approve')
-  if kw.get('backend') is False:
-    cmd_args.append('-backend=false')
-  if kw.get('color') is False:
-    cmd_args.append('-no-color')
-  if kw.get('force_copy'):
-    cmd_args.append('-force-copy')
-  if kw.get('input') is False:
-    cmd_args.append('-input=false')
-  if kw.get('json_format') is True:
-    cmd_args.append('-json')
-  if kw.get('lock') is False:
-    cmd_args.append('-lock=false')
-  if kw.get('plugin_dir'):
-    cmd_args += ['-plugin-dir', kw['plugin_dir']]
-  if kw.get('refresh') is False:
-    cmd_args.append('-refresh=false')
-  if kw.get('state'):
-    cmd_args += ['-state', kw['state']]
-  if kw.get('upgrade'):
-    cmd_args.append('-upgrade')
+  bool_flags = {
+      'auto_approve': '-auto-approve',
+      'force_copy': '-force-copy',
+      'json_format': '-json',
+      'upgrade': '-upgrade',
+  }
+  for kwarg, flag in bool_flags.items():
+    if kw.get(kwarg):
+      cmd_args.append(flag)
+
+  inverse_bool_flags = {
+      'backend': '-backend=false',
+      'color': '-no-color',
+      'input': '-input=false',
+      'lock': '-lock=false',
+      'refresh': '-refresh=false',
+  }
+  for kwarg, flag in inverse_bool_flags.items():
+    if kw.get(kwarg) is False:
+      cmd_args.append(flag)
+
+  kv_flags = {
+      'plugin_dir': '-plugin-dir',
+      'state': '-state',
+  }
+  for kwarg, flag in kv_flags.items():
+    if kw.get(kwarg):
+      cmd_args.extend([flag, kw[kwarg]])
+
   if isinstance(init_vars, dict):
     cmd_args += [f'-backend-config={k}={v}' for k, v in init_vars.items()]
   elif isinstance(init_vars, str):
