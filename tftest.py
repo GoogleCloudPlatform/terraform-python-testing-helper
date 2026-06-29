@@ -36,7 +36,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-__version__ = '1.8.7'
+__version__ = '1.8.8'
 
 _LOGGER = logging.getLogger('tftest')
 
@@ -411,8 +411,9 @@ class TerraformTest(object):
                    default=str).encode("cp037")).hexdigest() + ".pickle"
 
   def _cache(func):
+    sig = inspect.signature(func)
 
-    def cache(self, **kwargs):
+    def cache(self, *args, **kwargs):
       """
       Runs the tftest instance method or retreives the cache value if it exists
 
@@ -424,16 +425,20 @@ class TerraformTest(object):
       _LOGGER.info("Cache decorated method: %s", func.__name__)
 
       if not self.enable_cache:
-        return func(self, **kwargs)
-      elif not kwargs.get("use_cache", False):
-        return func(self, **kwargs)
+        return func(self, *args, **kwargs)
+
+      method_args = sig.bind(self, *args, **kwargs).arguments
+      method_args.pop('self', None)
+
+      if not method_args.get("use_cache", False):
+        return func(self, *args, **kwargs)
 
       cache_dir = self.cache_dir / \
           Path(sha1(str(self.tfdir).encode("cp037")).hexdigest()) / \
           Path(func.__name__)
       cache_dir.mkdir(parents=True, exist_ok=True)
 
-      hash_filename = self.generate_cache_hash(kwargs)
+      hash_filename = self.generate_cache_hash(method_args)
       cache_key = cache_dir / hash_filename
       _LOGGER.debug("Cache key: %s", cache_key)
 
@@ -446,12 +451,12 @@ class TerraformTest(object):
         return pickle.load(f)
 
       _LOGGER.info("Running command")
-      out = func(self, **kwargs)
+      out = func(self, *args, **kwargs)
 
       if out:
         # the hash value will now include any changes
         # to the tfdir directory
-        hash_filename = self.generate_cache_hash(kwargs)
+        hash_filename = self.generate_cache_hash(method_args)
         cache_key = cache_dir / hash_filename
         _LOGGER.debug("Cache key: %s", cache_key)
 

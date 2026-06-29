@@ -198,3 +198,14 @@ def test_use_cache_with_new_tf_content(tf, dummy_tf_filepath):
           f.write(str(uuid.uuid4()))
 
       assert mock_execute_command.call_count == expected_call_count
+
+
+@pytest.mark.parametrize("tf", [True], indirect=True)
+def test_output_positional_arg(tf):
+  """
+  Ensures output() can be called with positional arguments when caching is enabled
+  """
+  with patch.object(tf, 'execute_command') as mock_execute:
+    mock_execute.return_value.out = "{}"
+    tf.output("my_output", use_cache=True)
+    assert mock_execute.call_count == 1
