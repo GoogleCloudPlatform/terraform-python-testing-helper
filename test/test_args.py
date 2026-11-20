@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 "Test the function for mapping Terraform arguments."
+from pathlib import Path
 import pytest
 
 import tftest
@@ -100,6 +101,15 @@ ARGS_TESTS = (
         'tf_var_file': ['foo.tfvar', 'bar.tfvar']
     }, ['-var-file=foo.tfvar', '-var-file=bar.tfvar']),
     ({
+        'tf_var_file': ('foo.tfvar', 'bar.tfvar')
+    }, ['-var-file=foo.tfvar', '-var-file=bar.tfvar']),
+    ({
+        'plan_out': 'plan.out'
+    }, ['-out=plan.out']),
+    ({
+        'init_vars': Path('backend.hcl')
+    }, ['-backend-config', 'backend.hcl']),
+    ({
         'tf_vars': {
             'text': 'text'
         }
@@ -113,7 +123,12 @@ ARGS_TESTS = (
         'tf_vars': {
             'bool': False
         }
-    }, ['-var', 'bool=False']),
+    }, ['-var', 'bool=false']),
+    ({
+        'tf_vars': {
+            'bool': True
+        }
+    }, ['-var', 'bool=true']),
     ({
         'tf_vars': {
             'dict': {
@@ -159,4 +174,4 @@ def test_targets():
 
 
 def test_parallelism_arg():
-  assert tftest.parse_args(parallelism=10) == ['-parallelism', 10]
+  assert tftest.parse_args(parallelism=10) == ['-parallelism', '10']

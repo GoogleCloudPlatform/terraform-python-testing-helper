@@ -14,27 +14,29 @@
 
 name: Python tests
 on:
+  push:
+    branches:
+      - master
   pull_request:
     branches:
       - master
-    tags:
-      - ci
-      - test
 
 env:
   GOOGLE_APPLICATION_CREDENTIALS: "/home/runner/credentials.json"
   PYTEST_ADDOPTS: "--color=yes"
-  PYTHON_VERSION: 3.9
   TF_PLUGIN_CACHE_DIR: "/home/runner/.terraform.d/plugin-cache"
-  TF_VERSION: 1.1.8
-  TG_VERSION: 0.36.9
 
 jobs:
   tests:
-    name: Python tests
+    name: Python ${{ matrix.python-version }} (${{ matrix.iac }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
+        iac: ["terraform", "opentofu"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Config auth
         id: auth
@@ -44,28 +46,29 @@ jobs:
 
       - name: Set up Python
         id: python-setup
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Set up Terraform
-        id: tf-setup
-        uses: hashicorp/setup-terraform@v1
+        if: matrix.iac == 'terraform'
+        uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      - name: Install Terragrunt
-        id: tg-setup
-        run: |
-          sudo wget -q -O /bin/terragrunt \
-            https://github.com/gruntwork-io/terragrunt/releases/download/v${{ env.TG_VERSION }}/terragrunt_linux_amd64
-          sudo chmod +x /bin/terragrunt
-          terragrunt -v
+      - name: Set up OpenTofu
+        if: matrix.iac == 'opentofu'
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_wrapper: false
 
       - name: Run tests
         id: python-test
         run: |
           mkdir -p ${{ env.TF_PLUGIN_CACHE_DIR }}
           pip install -r DEV-REQUIREMENTS.txt
-          pytest -vv
+          if [ "${{ matrix.iac }}" = "opentofu" ]; then
+            pytest -vv --tf-binary=tofu
+          else
+            pytest -vv --tf-binary=terraform
+          fi

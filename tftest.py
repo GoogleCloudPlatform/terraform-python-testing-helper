@@ -11,62 +11,77 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Simple Python wrapper for Terraform test fixtures.
+"""Simple Python wrapper for Terraform and OpenTofu test fixtures.
 
 See documentation in the TerraformTest class for usage. Terraform wrapping
 inspired by https://github.com/beelit94/python-terraform
 """
 
 import collections
-import inspect
+import collections.abc
 import itertools
 import json
 import logging
 import os
-import pickle
 import re
 import shutil
 import stat
 import subprocess
 import sys
 import tempfile
+import threading
 import weakref
 
-from hashlib import sha1
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
-__version__ = '1.8.8'
+__version__ = '2.0.0'
 
 _LOGGER = logging.getLogger('tftest')
+
+PathType = Union[str, os.PathLike]
 
 TerraformCommandOutput = collections.namedtuple('TerraformCommandOutput',
                                                 'retcode out err')
 
-TerraformStateResource = collections.namedtuple(
-    'TerraformStateResource', 'key provider type attributes depends_on raw')
+
+def _rmtree(path: Path) -> None:
+  """Remove a directory tree, clearing read-only bits if needed."""
+
+  def remove_readonly(func: Any, fpath: str, exc: Any) -> None:
+    _LOGGER.warning('Issue deleting file %s, caused by %s', fpath, exc)
+    os.chmod(fpath, stat.S_IWRITE)
+    func(fpath)
+
+  if sys.version_info >= (3, 12):
+    shutil.rmtree(path, onexc=remove_readonly)
+  else:
+    shutil.rmtree(path, onerror=remove_readonly)
 
 
 class TerraformTestError(Exception):
 
   @property
-  def cmd_error(self):
+  def cmd_error(self) -> Optional[str]:
     return self.args[1] if len(self.args) > 1 else None
 
 
-def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
+def parse_args(init_vars: Optional[Union[Dict[str, Any], PathType]] = None,
+               tf_vars: Optional[Dict[str, Any]] = None,
+               targets: Optional[Iterable[str]] = None, **kw: Any) -> List[str]:
   """Convert method arguments for use in Terraform commands.
 
   Args:
-    init_vars: dict of key/values converted to -backend-config='k=v' form, or
-      string argument converted to -backend-config=arg
+    init_vars: dict of key/values converted to -backend-config=k=v form, or
+      string/path argument converted to -backend-config arg.
     tf_vars: dict of key/values converted to -var k=v form.
+    targets: iterable of resource addresses converted to -target=addr.
     **kw: converted to the appropriate Terraform flag.
 
   Returns:
     A list of command arguments for use with subprocess.
   """
-  cmd_args = []
+  cmd_args: List[str] = []
 
   bool_flags = {
       'auto_approve': '-auto-approve',
@@ -95,473 +110,396 @@ def parse_args(init_vars=None, tf_vars=None, targets=None, **kw):
       'state': '-state',
   }
   for kwarg, flag in kv_flags.items():
-    if kw.get(kwarg):
-      cmd_args.extend([flag, kw[kwarg]])
+    val = kw.get(kwarg)
+    if val is not None and val != '':
+      cmd_args.extend([flag, str(val)])
 
   if isinstance(init_vars, dict):
     cmd_args += [f'-backend-config={k}={v}' for k, v in init_vars.items()]
-  elif isinstance(init_vars, str):
-    cmd_args += ['-backend-config', f'{init_vars}']
+  elif isinstance(init_vars, (str, os.PathLike)):
+    cmd_args += ['-backend-config', str(init_vars)]
+
   if tf_vars:
     cmd_args += list(
-        itertools.chain.from_iterable(
-            ("-var",
-             f"{k}={json.dumps(v) if isinstance(v, (dict, list)) else v}")
-            for k, v in tf_vars.items()))
+        itertools.chain.from_iterable((
+            '-var',
+            f'{k}={json.dumps(v) if isinstance(v, (dict, list, tuple, bool)) else v}',
+        ) for k, v in tf_vars.items()))
+
   if targets:
-    cmd_args += [f"-target={t}" for t in targets]
+    cmd_args += [f'-target={t}' for t in targets]
+
   if kw.get('tf_var_file'):
     tf_var_file = kw['tf_var_file']
     if isinstance(tf_var_file, (list, tuple)):
       cmd_args += [f'-var-file={v}' for v in tf_var_file]
     else:
       cmd_args.append(f'-var-file={tf_var_file}')
+
+  if kw.get('plan_out'):
+    cmd_args.append(f"-out={kw['plan_out']}")
+
   return cmd_args
 
 
 class TerraformJSONBase(collections.abc.Mapping):
-  "Base class for JSON wrappers."
+  """Base class for JSON wrappers."""
 
-  def __init__(self, raw):
+  def __init__(self, raw: Dict[str, Any]):
     self._raw = raw
 
-  def __bytes__(self):
-    return bytes(self._raw)
-
-  def __getitem__(self, index):
+  def __getitem__(self, index: str) -> Any:
     return self._raw[index]
 
   def __iter__(self):
     return iter(self._raw)
 
-  def __len__(self):
+  def __len__(self) -> int:
     return len(self._raw)
 
-  def __str__(self):
+  def __str__(self) -> str:
     return str(self._raw)
 
 
 class TerraformValueDict(TerraformJSONBase):
-  "Minimal wrapper to directly expose outputs or variables."
+  """Minimal wrapper to directly expose outputs or variables."""
 
-  def __init__(self, raw):
-    super(TerraformValueDict, self).__init__(raw)
+  def __init__(self, raw: Optional[Dict[str, Any]]):
+    raw = raw or {}
+    super().__init__(raw)
     # only matters for outputs
-    self.sensitive = tuple(k for k, v in raw.items() if v.get('sensitive'))
+    self.sensitive = tuple(
+        k for k, v in raw.items() if isinstance(v, dict) and v.get('sensitive'))
 
-  def __getattr__(self, name):
-    if isinstance(name, str) and name[:2] == name[-2:] == '__':
-      # skip non-existing dunder method lookups
+  def __getattr__(self, name: str) -> Any:
+    if isinstance(name, str) and name.startswith('__') and name.endswith('__'):
       raise AttributeError(name)
     return getattr(self._raw, name)
 
-  def __getitem__(self, name):
+  def __getitem__(self, name: str) -> Any:
     return self._raw[name].get('value')
 
 
 class TerraformPlanModule(TerraformJSONBase):
-  "Minimal wrapper for parsed plan output modules."
+  """Minimal wrapper for parsed plan output modules."""
 
-  def __init__(self, raw):
-    super(TerraformPlanModule, self).__init__(raw)
+  def __init__(self, raw: Optional[Dict[str, Any]]):
+    raw = raw or {}
+    super().__init__(raw)
     prefix = raw.get('address', '')
     self._strip = 0 if not prefix else len(prefix) + 1
-    self._modules = self._resources = None
+    self._modules: Optional[Dict[str, 'TerraformPlanModule']] = None
+    self._resources: Optional[Dict[str, Dict[str, Any]]] = None
 
   @property
-  def child_modules(self):
+  def child_modules(self) -> Dict[str, 'TerraformPlanModule']:
     if self._modules is None:
-      self._modules = dict(
-          (mod['address'][self._strip:], TerraformPlanModule(mod))
-          for mod in self._raw.get('child_modules', {}))
+      self._modules = {
+          mod['address'][self._strip:]: TerraformPlanModule(mod)
+          for mod in (self._raw.get('child_modules') or [])
+      }
     return self._modules
 
   @property
-  def resources(self):
+  def resources(self) -> Dict[str, Dict[str, Any]]:
     if self._resources is None:
-      self._resources = dict((res['address'][self._strip:], res)
-                             for res in self._raw.get('resources', []))
+      self._resources = {
+          res['address'][self._strip:]: res
+          for res in (self._raw.get('resources') or [])
+      }
     return self._resources
 
 
 class TerraformPlanOutput(TerraformJSONBase):
-  "Minimal wrapper for Terraform plan JSON output."
+  """Minimal wrapper for Terraform plan JSON output."""
 
-  def __init__(self, raw):
-    super(TerraformPlanOutput, self).__init__(raw)
-    planned_values = raw.get('planned_values', {})
-    self.root_module = TerraformPlanModule(planned_values.get(
-        'root_module', {}))
-    self.outputs = TerraformValueDict(planned_values.get('outputs', {}))
-    self.resource_changes = dict(
-        (v['address'], v) for v in self._raw.get('resource_changes', {}))
+  def __init__(self, raw: Optional[Dict[str, Any]]):
+    raw = raw or {}
+    super().__init__(raw)
+    planned_values = raw.get('planned_values') or {}
+    self.root_module = TerraformPlanModule(
+        planned_values.get('root_module') or {})
+    self.outputs = TerraformValueDict(planned_values.get('outputs') or {})
+    self.resource_changes = {
+        v['address']: v for v in (self._raw.get('resource_changes') or [])
+    }
     # there might be no variables defined
-    self.variables = TerraformValueDict(raw.get('variables', {}))
+    self.variables = TerraformValueDict(raw.get('variables') or {})
+    prior_values = (raw.get('prior_state') or {}).get('values') or {}
     self.prior_root_module = TerraformPlanModule(
-        raw.get('prior_state', {}).get('values', {}).get('root_module', {}))
+        prior_values.get('root_module') or {})
 
   @property
-  def resources(self):
+  def resources(self) -> Dict[str, Dict[str, Any]]:
     return self.root_module.resources
 
   @property
-  def modules(self):
+  def modules(self) -> Dict[str, TerraformPlanModule]:
     return self.root_module.child_modules
 
   @property
-  def prior_resources(self):
+  def prior_resources(self) -> Dict[str, Dict[str, Any]]:
     return self.prior_root_module.resources
 
-  def __getattr__(self, name):
-    return self._raw[name]
-
-  def __getstate__(self):
-    return self.__dict__
-
-  def __setstate__(self, d):
-    self.__dict__.update(d)
+  def __getattr__(self, name: str) -> Any:
+    if isinstance(name, str) and name.startswith('__') and name.endswith('__'):
+      raise AttributeError(name)
+    try:
+      return self._raw[name]
+    except KeyError as e:
+      raise AttributeError(name) from e
 
 
 class TerraformState(TerraformJSONBase):
-  "Minimal wrapper for Terraform state JSON format."
+  """Minimal wrapper for Terraform state JSON format."""
 
-  def __init__(self, raw):
-    super(TerraformState, self).__init__(raw)
-    self.outputs = TerraformValueDict(raw.get('outputs', {}))
-    self._resources = None
+  def __init__(self, raw: Optional[Dict[str, Any]]):
+    raw = raw or {}
+    super().__init__(raw)
+    self.outputs = TerraformValueDict(raw.get('outputs') or {})
+    self._resources: Optional[Dict[str, Dict[str, Any]]] = None
 
   @property
-  def resources(self):
-    if not self._resources:
-      resources = {}
-      for res in self._raw['resources']:
-        name = f"{res.get('module')}.{res.get('type')}.{res.get('name')}"
+  def resources(self) -> Dict[str, Dict[str, Any]]:
+    if self._resources is None:
+      resources: Dict[str, Dict[str, Any]] = {}
+      for res in (self._raw.get('resources') or []):
+        parts = [
+            res.get('module'),
+            'data' if res.get('mode') == 'data' else None,
+            res.get('type'),
+            res.get('name'),
+        ]
+        name = '.'.join(p for p in parts if p)
         resources[name] = res
       self._resources = resources
     return self._resources
 
-  def __getattr__(self, name):
-    return self._raw[name]
+  def __getattr__(self, name: str) -> Any:
+    if isinstance(name, str) and name.startswith('__') and name.endswith('__'):
+      raise AttributeError(name)
+    try:
+      return self._raw[name]
+    except KeyError as e:
+      raise AttributeError(name) from e
 
-  def __getstate__(self):
-    return self.__dict__
 
-  def __setstate__(self, d):
-    self.__dict__.update(d)
-
-
-class TerraformTest(object):
-  """Helper class for use in testing Terraform modules.
+class TerraformTest:
+  """Helper class for use in testing Terraform and OpenTofu modules.
 
   This helper class can be used to set up fixtures in Terraform tests, so that
-  the usual Terraform commands (init, plan, apply, output, destroy) can be run
-  on a module. Configuration is done at instantiation first, by passing in the
-  Terraform root module path, and then in the setup method through files that
-  will be temporarily linked in the module, and Terraform variables.
+  the usual commands (init, plan, apply, output, destroy) can be run on a
+  module. Configuration is done at instantiation first, by passing in the
+  Terraform root module path, and then in the setup method through files or
+  directories that will be temporarily linked in the module, and Terraform
+  variables.
 
-  The standard way of using this is by calling setup to configure the module
-  through temporarily linked Terraform files and variables, run one or more
-  Terraform commands, then check command output, state, or created resources
-  from individual tests.
-
-  The local .terraform directory (including local state) and any linked file
-  are removed when the instance is garbage collected. Destroy needs to be
-  called explicitly using destroy().
+  Instances can be used as a context manager (`with TerraformTest(...) as tf:`)
+  for deterministic cleanup, or cleaned up via `cleanup()`. If neither is used,
+  the local .terraform directory (including local state) and any linked files
+  are removed when the instance is garbage collected. Cloud resource teardown
+  still needs to be called explicitly using `destroy()`.
 
   Args:
     tfdir: the Terraform module directory to test, either an absolute path, or
-      relative to basedir.
+      relative to basedir. Stored on `self.tfdir` as an absolute `pathlib.Path`.
     basedir: optional base directory to use for relative paths, defaults to the
-      directory above the one this module lives in.
-    binary: path to the Terraform command.
+      current working directory.
+    binary: path or name of the Terraform/OpenTofu command.
     env: a dict with custom environment variables to pass to terraform.
-    enable_cache: Determines if the caching enabled for specific methods
-    cache_dir: optional base directory to use for caching, defaults to
-      the directory of the python file that instantiates this class
   """
 
-  def __init__(self, tfdir, basedir=None, binary='terraform', env=None,
-               enable_cache=False, cache_dir=None):
+  def __init__(self, tfdir: PathType, basedir: Optional[PathType] = None,
+               binary: PathType = 'terraform',
+               env: Optional[Dict[str, str]] = None) -> None:
     """Set Terraform folder to operate on, and optional base directory."""
-    self._basedir = basedir or os.getcwd()
-    self.binary = binary
-    self.tfdir = self._abspath(tfdir)
-    self._env = env or {}
-    self.env = {k: v for k, v in os.environ.items() if k != 'TF_LOG'}
-    self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
-    self._output_formatter = lambda out: TerraformValueDict(json.loads(out))
-    self.enable_cache = enable_cache
-    if not cache_dir:
-      self.cache_dir = Path(
-          inspect.stack()[1].filename).parent / ".tftest-cache"
-    else:
-      self.cache_dir = Path(cache_dir)
+    self._basedir: Path = (Path(basedir).resolve()
+                           if basedir is not None else Path.cwd())
+    self.binary: PathType = binary
+    self.tfdir: Path = self._abspath(tfdir)
+    self.env: Dict[str, str] = {
+        k: v for k, v in os.environ.items() if k != 'TF_LOG'
+    }
     if env is not None:
       self.env.update(env)
+    self._plan_formatter = lambda out: TerraformPlanOutput(json.loads(out))
+    self._output_formatter = lambda out: TerraformValueDict(json.loads(out))
+    self._finalizer: Optional[weakref.finalize] = None
+    self._linked_files: List[str] = []
+    self._remove_lockfile: Optional[bool] = None
+    self._restore_files: bool = False
+
+  def __enter__(self) -> 'TerraformTest':
+    return self
+
+  def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    self.cleanup()
+
+  def cleanup(self) -> None:
+    """Run registered cleanup immediately if present."""
+    if self._finalizer is not None and self._finalizer.alive:
+      self._finalizer()
+    self._linked_files.clear()
+    self._remove_lockfile = None
+    self._restore_files = False
 
   @classmethod
-  def _cleanup(cls, tfdir, filenames, deep=True, restore_files=False):
-    """Remove linked files and .terraform folder at instance deletion."""
-
-    def remove_readonly(func, path, excinfo):
-      _LOGGER.warning(f'Issue deleting file {path}, caused by {excinfo}')
-      os.chmod(path, stat.S_IWRITE)
-      func(path)
-
+  def _cleanup(cls, tfdir: Path, filenames: Sequence[str], deep: bool = True,
+               restore_files: bool = False,
+               remove_lockfile: bool = True) -> None:
+    """Remove linked files and Terraform runtime artifacts."""
     _LOGGER.debug('cleaning up %s %s', tfdir, filenames)
     tf_path = Path(tfdir)
     for filename in filenames:
-      (tf_path / filename).unlink(missing_ok=True)
+      target = tf_path / filename
+      if target.is_symlink() or target.is_file():
+        target.unlink(missing_ok=True)
+      elif target.is_dir():
+        _rmtree(target)
 
     if not deep:
       return
 
     terraform_dir = tf_path / '.terraform'
     if terraform_dir.is_dir():
-      shutil.rmtree(terraform_dir, onerror=remove_readonly)
+      _rmtree(terraform_dir)
 
-    lock_file = tf_path / '.terraform.lock.hcl'
-    if lock_file.is_file():
-      lock_file.unlink()
+    if remove_lockfile:
+      lock_file = tf_path / '.terraform.lock.hcl'
+      if lock_file.is_file():
+        lock_file.unlink()
 
     state_file = tf_path / 'terraform.tfstate'
     if state_file.is_file():
       state_file.unlink()
 
+    state_dir = tf_path / 'terraform.tfstate.d'
+    if state_dir.is_dir():
+      _rmtree(state_dir)
+
     for backup_path in tf_path.glob('terraform.tfstate.backup*'):
       if backup_path.is_file():
         backup_path.unlink()
 
-    _LOGGER.debug('Restoring original TF files after prevent destroy changes')
-    if restore_files:
+    if restore_files and tf_path.is_dir():
+      _LOGGER.debug('Restoring original TF files after prevent destroy changes')
       for bkp_file in tf_path.rglob('*.bkp'):
+        if '.terraform' in bkp_file.parts:
+          continue
         try:
-          shutil.copy(str(bkp_file), f'{str(bkp_file).strip(".bkp")}')
-        except (IOError, OSError):
+          shutil.copy(str(bkp_file), str(bkp_file.with_suffix('')))
+        except OSError as e:
           _LOGGER.exception(
               f'Unable to restore terraform file {bkp_file.resolve()}')
           raise TerraformTestError(
-              f'Restore of terraform file ({bkp_file.resolve()}) failed')
+              f'Restore of terraform file ({bkp_file.resolve()}) failed') from e
         else:
           bkp_file.unlink(missing_ok=True)
 
-  def _abspath(self, path):
+  def _abspath(self, path: PathType) -> Path:
     """Make relative path absolute from base dir."""
     path_obj = Path(path)
     if path_obj.is_absolute():
-      return path
-    return str(Path(self._basedir) / path)
+      return path_obj
+    return self._basedir / path_obj
 
-  def _dirhash(self, directory, hash, ignore_hidden=False,
-               exclude_directories=[], excluded_extensions=[]):
-    """Returns hash of directory's file contents"""
-    assert Path(directory).is_dir()
-    try:
-      dir_iter = sorted(Path(directory).iterdir(), key=lambda p: str(p).lower())
-    except FileNotFoundError:
-      return hash
-    for path in dir_iter:
-      if path.is_file():
-        if ignore_hidden and path.name.startswith("."):
-          continue
-        if path.suffix in excluded_extensions:
-          continue
-        with open(path, "rb") as f:
-          for chunk in iter(lambda: f.read(4096), b""):
-            hash.update(chunk)
-      elif path.is_dir() and path.name not in exclude_directories:
-        hash = self._dirhash(path, hash, ignore_hidden=ignore_hidden,
-                             exclude_directories=exclude_directories,
-                             excluded_extensions=excluded_extensions)
-    return hash
-
-  def generate_cache_hash(self, method_kwargs):
-    """Returns a hash value using the instance's attributes and method keyword arguments"""
-    params = {
-        **{
-            k: v for k, v in self.__dict__.items()
-            # only uses instance attributes that are involved in the results of
-            # the decorated method
-            if k in ["binary", "_basedir", "tfdir", "_env"]
-        },
-        **method_kwargs,
-    }
-
-    # creates hash of file contents
-    for path_param in ["extra_files", "tf_var_file"]:
-      if path_param in method_kwargs:
-        if isinstance(method_kwargs[path_param], list):
-          params[path_param] = [
-              sha1(open(fp, 'rb').read()).hexdigest()
-              for fp in method_kwargs[path_param]
-          ]
-        else:
-          params[path_param] = sha1(
-              open(method_kwargs[path_param], 'rb').read()).hexdigest()
-
-    # creates hash of all file content within tfdir
-    # excludes .terraform/, hidden files, tfstate files from being used for hash
-    params["tfdir"] = self._dirhash(self.tfdir, sha1(), ignore_hidden=True,
-                                    exclude_directories=[".terraform"],
-                                    excluded_extensions=['.backup', '.tfstate'
-                                                        ]).hexdigest()
-
-    return sha1(
-        json.dumps(params, sort_keys=True,
-                   default=str).encode("cp037")).hexdigest() + ".pickle"
-
-  def _cache(func):
-    sig = inspect.signature(func)
-
-    def cache(self, *args, **kwargs):
-      """
-      Runs the tftest instance method or retreives the cache value if it exists
-
-      Args:
-          kwargs: Keyword argument that are passed to the decorated method
-      Returns:
-          Output of the tftest instance method
-      """
-      _LOGGER.info("Cache decorated method: %s", func.__name__)
-
-      if not self.enable_cache:
-        return func(self, *args, **kwargs)
-
-      method_args = sig.bind(self, *args, **kwargs).arguments
-      method_args.pop('self', None)
-
-      if not method_args.get("use_cache", False):
-        return func(self, *args, **kwargs)
-
-      cache_dir = self.cache_dir / \
-          Path(sha1(str(self.tfdir).encode("cp037")).hexdigest()) / \
-          Path(func.__name__)
-      cache_dir.mkdir(parents=True, exist_ok=True)
-
-      hash_filename = self.generate_cache_hash(method_args)
-      cache_key = cache_dir / hash_filename
-      _LOGGER.debug("Cache key: %s", cache_key)
-
-      try:
-        f = cache_key.open("rb")
-      except OSError:
-        _LOGGER.debug("Could not read cache path")
-      else:
-        _LOGGER.info("Getting output from cache")
-        return pickle.load(f)
-
-      _LOGGER.info("Running command")
-      out = func(self, *args, **kwargs)
-
-      if out:
-        # the hash value will now include any changes
-        # to the tfdir directory
-        hash_filename = self.generate_cache_hash(method_args)
-        cache_key = cache_dir / hash_filename
-        _LOGGER.debug("Cache key: %s", cache_key)
-
-        _LOGGER.info("Writing command to cache")
-        try:
-          f = cache_key.open("wb")
-        except OSError as e:
-          _LOGGER.error("Cache could not write path")
-        else:
-          with f:
-            pickle.dump(out, f, pickle.HIGHEST_PROTOCOL)
-
-      return out
-
-    return cache
-
-  @_cache
-  def setup(self, extra_files: Optional[List[str]] = None,
-            plugin_dir: Optional[str] = None,
+  def setup(self, extra_files: Optional[Sequence[PathType]] = None,
+            plugin_dir: Optional[PathType] = None,
             init_vars: Optional[Union[Dict[str, Any],
-                                      str]] = None, backend: bool = True,
+                                      PathType]] = None, backend: bool = True,
             cleanup_on_exit: bool = True, disable_prevent_destroy: bool = False,
-            workspace_name: Optional[str] = None, use_cache: bool = False,
-            **kw: Any) -> str:
+            workspace_name: Optional[str] = None, **kw: Any) -> str:
     """Setup method to use in test fixtures.
 
     This method prepares a new Terraform environment for testing the module
     specified at init time, and returns init output.
 
     Args:
-      extra_files: list of absolute or relative to base paths to be linked in
-        the root module folder
+      extra_files: list of absolute or relative to base file or directory paths
+        to be linked in the root module folder.
       plugin_dir: path to a plugin directory to be used for Terraform init, eg
-        built with terraform-bundle
-      init_vars: Terraform backend configuration variables
-      backend: Terraform backend argument
-      cleanup_on_exit: remove .terraform and terraform.tfstate files on exit
-      disable_prevent_destroy: set all prevent destroy to false
-      workspace_name: name of workspace to create or select
+        built with terraform-bundle.
+      init_vars: Terraform backend configuration variables.
+      backend: Terraform backend argument.
+      cleanup_on_exit: remove .terraform and terraform.tfstate files on exit.
+      disable_prevent_destroy: set all prevent_destroy to false.
+      workspace_name: name of workspace to create or select.
 
     Returns:
       Terraform init output.
     """
-    # remove lifecycle prevent destroy
-    if disable_prevent_destroy:
-      min_python = (3, 5)
-      if sys.version_info < min_python:
-        raise TerraformTestError(
-            'The disable_prevent_destroy flag requires at least Python 3.5')
-      for tf_file in Path(self.tfdir).rglob('*.tf'):
-        try:
-          shutil.copy(str(tf_file), f'{str(tf_file)}.bkp')
-        # except (OSError, IOError) as exc:
-        except (OSError, IOError):
-          _LOGGER.exception(
-              f'Unable to backup terraform file {tf_file.resolve()}')
-          raise TerraformTestError(
-              f'Backup of terraform file ({tf_file.resolve()}) failed')
-        try:
-          with open(tf_file, 'r') as src:
-            terraform = src.read()
-          with open(tf_file, 'w') as src:
-            terraform = re.sub(r'prevent_destroy\s+=\s+true',
-                               'prevent_destroy = false', terraform)
-            src.write(terraform)
-        except (OSError, IOError):
-          _LOGGER.exception(
-              f'Unable to update prevent_destroy in file {tf_file.resolve()}')
-          raise TerraformTestError(
-              f'Unable to update prevent_destroy in file ({tf_file.resolve()}) failed'
-          )
+    if self._remove_lockfile is None:
+      self._remove_lockfile = not (self.tfdir / '.terraform.lock.hcl').is_file()
 
-    # link extra files inside dir
-    filenames = []
+    if disable_prevent_destroy:
+      self._restore_files = True
+      if self.tfdir.is_dir():
+        for tf_file in self.tfdir.rglob('*.tf'):
+          if '.terraform' in tf_file.parts:
+            continue
+          bkp_file = Path(f'{tf_file}.bkp')
+          if not bkp_file.exists():
+            try:
+              shutil.copy(str(tf_file), str(bkp_file))
+            except OSError as e:
+              _LOGGER.exception(
+                  f'Unable to backup terraform file {tf_file.resolve()}')
+              raise TerraformTestError(
+                  f'Backup of terraform file ({tf_file.resolve()}) failed'
+              ) from e
+          try:
+            with open(tf_file, 'r', encoding='utf-8') as src:
+              terraform = src.read()
+            with open(tf_file, 'w', encoding='utf-8') as src:
+              terraform = re.sub(r'prevent_destroy\s*=\s*true',
+                                 'prevent_destroy = false', terraform)
+              src.write(terraform)
+          except OSError as e:
+            _LOGGER.exception(
+                f'Unable to update prevent_destroy in file {tf_file.resolve()}')
+            raise TerraformTestError(
+                f'Unable to update prevent_destroy in file ({tf_file.resolve()}) failed'
+            ) from e
+
     for link_src in (extra_files or []):
-      link_src_path = Path(self._abspath(link_src))
+      link_src_path = self._abspath(link_src)
       filename = link_src_path.name
-      if link_src_path.is_file():
-        link_dst = Path(self.tfdir) / filename
+      if link_src_path.exists():
+        link_dst = self.tfdir / filename
         try:
           if os.name == 'nt':
-            shutil.copy(link_src_path, link_dst)
+            if link_src_path.is_dir():
+              shutil.copytree(link_src_path, link_dst)
+            else:
+              shutil.copy(link_src_path, link_dst)
           else:
             os.symlink(link_src_path, link_dst)
-          filenames.append(filename)
-        except FileExistsError as e:  # pylint:disable=undefined-variable
+          if filename not in self._linked_files:
+            self._linked_files.append(filename)
+        except FileExistsError as e:
           _LOGGER.warning(e)
         else:
           _LOGGER.debug('linked %s', link_src_path)
       else:
-        _LOGGER.warning(f'no such file {link_src_path}')
+        _LOGGER.warning('no such file or directory %s', link_src_path)
+
+    if self._finalizer is not None and self._finalizer.alive:
+      self._finalizer.detach()
     self._finalizer = weakref.finalize(self, self._cleanup, self.tfdir,
-                                       filenames, deep=cleanup_on_exit,
-                                       restore_files=disable_prevent_destroy)
+                                       list(self._linked_files),
+                                       deep=cleanup_on_exit,
+                                       restore_files=self._restore_files,
+                                       remove_lockfile=self._remove_lockfile)
     setup_output = self.init(plugin_dir=plugin_dir, init_vars=init_vars,
-                             backend=backend, use_cache=use_cache, **kw)
+                             backend=backend, **kw)
     if workspace_name:
       setup_output += self.workspace(name=workspace_name)
     return setup_output
 
-  @_cache
   def init(self, input: bool = False, color: bool = False,
-           force_copy: bool = False, plugin_dir: Optional[str] = None,
-           init_vars: Optional[Union[Dict[str, Any], str]] = None,
-           backend: bool = True, use_cache: bool = False, **kw: Any) -> str:
+           force_copy: bool = False, plugin_dir: Optional[PathType] = None,
+           init_vars: Optional[Union[Dict[str, Any], PathType]] = None,
+           backend: bool = True, **kw: Any) -> str:
     """Run Terraform init command."""
     cmd_args = parse_args(input=input, color=color, backend=backend,
                           force_copy=force_copy, plugin_dir=plugin_dir,
@@ -570,7 +508,7 @@ class TerraformTest(object):
 
   def workspace(self, name: str) -> str:
     """Run Terraform workspace command."""
-    raw_ws_out = self.execute_command('workspace', *['list']).out
+    raw_ws_out = self.execute_command('workspace', 'list').out
     cmd_args = ['select', name]
     if name not in [
         ws.replace('*', '').strip()
@@ -580,70 +518,82 @@ class TerraformTest(object):
       cmd_args = ['new', name]
     return self.execute_command('workspace', *cmd_args).out
 
-  @_cache
   def plan(self, input: bool = False, color: bool = False, refresh: bool = True,
            tf_vars: Optional[Dict[str, Any]] = None,
-           targets: Optional[List[str]] = None, output: bool = False,
-           tf_var_file: Optional[Union[str, List[str]]] = None,
-           state: Optional[str] = None, use_cache: bool = False,
+           targets: Optional[Sequence[str]] = None, output: bool = False,
+           tf_var_file: Optional[Union[PathType, Sequence[PathType]]] = None,
+           state: Optional[PathType] = None,
+           plan_out: Optional[PathType] = None,
            **kw: Any) -> Union[str, TerraformPlanOutput]:
-    """
-    Run Terraform plan command, optionally returning parsed plan output.
+    """Run Terraform plan command, optionally returning parsed plan output.
 
     Args:
       input: Ask for input for variables if not directly set.
-      no_color: If specified, output won't contain any color.
+      color: Include color escape sequences in output.
       refresh: Update state prior to checking for differences.
       tf_vars: Dict of variables in the Terraform configuration.
-      targets: List of resources to target. Operation will be limited to this resource
-        and its dependencies
-      output: Determines if output will be returned.
-      tf_var_file: Path to terraform variable configuration file relative to `self.tfdir`.
+      targets: List of resources to target. Operation will be limited to this
+        resource and its dependencies.
+      output: Determines if parsed `TerraformPlanOutput` will be returned.
+      tf_var_file: Path (or sequence of paths) to terraform variable
+        configuration files relative to `self.tfdir` or absolute.
       state: Path to state file to use when reading the prior state snapshot.
+      plan_out: Optional path where the generated binary plan file should be
+        saved (`-out`). When provided, the plan file is kept on disk; when
+        omitted and `output=True`, a temporary plan file is used and unlinked.
     """
     cmd_args = parse_args(input=input, color=color, refresh=refresh,
                           tf_vars=tf_vars, targets=targets,
-                          tf_var_file=tf_var_file, state=state, **kw)
+                          tf_var_file=tf_var_file, state=state,
+                          plan_out=plan_out, **kw)
     if not output:
       return self.execute_command('plan', *cmd_args).out
-    with tempfile.NamedTemporaryFile() as fp:
-      fp.close()
-    temp_file = fp.name
-    cmd_args.append(f'-out={temp_file}')
-    self.execute_command('plan', *cmd_args)
-    result = self.execute_command('show', '-no-color', '-json', temp_file)
+    if plan_out is not None:
+      self.execute_command('plan', *cmd_args)
+      result = self.execute_command('show', '-no-color', '-json', str(plan_out))
+    else:
+      with tempfile.NamedTemporaryFile() as fp:
+        temp_file = fp.name
+      cmd_args.append(f'-out={temp_file}')
+      try:
+        self.execute_command('plan', *cmd_args)
+        result = self.execute_command('show', '-no-color', '-json', temp_file)
+      finally:
+        Path(temp_file).unlink(missing_ok=True)
     try:
       return self._plan_formatter(result.out)
     except json.JSONDecodeError as e:
-      raise TerraformTestError(f'Error decoding plan output: {e}')
+      raise TerraformTestError(f'Error decoding plan output: {e}') from e
 
-  @_cache
   def apply(self, input: bool = False, color: bool = False,
             auto_approve: bool = True, tf_vars: Optional[Dict[str, Any]] = None,
-            targets: Optional[List[str]] = None,
-            tf_var_file: Optional[Union[str, List[str]]] = None,
-            use_cache: bool = False, **kw: Any) -> str:
-    """
-    Run Terraform apply command.
+            targets: Optional[Sequence[str]] = None,
+            tf_var_file: Optional[Union[PathType, Sequence[PathType]]] = None,
+            plan_file: Optional[PathType] = None, **kw: Any) -> str:
+    """Run Terraform apply command.
 
     Args:
       input: Ask for input for variables if not directly set.
-      no_color: If specified, output won't contain any color.
+      color: Include color escape sequences in output.
       auto_approve: Skip interactive approval of plan before applying.
       tf_vars: Dict of variables in the Terraform configuration.
-      targets: List of resources to target. Operation will be limited to this resource
-        and its dependencies
-      tf_var_file: Path to terraform variable configuration file relative to `self.tfdir`.
+      targets: List of resources to target. Operation will be limited to this
+        resource and its dependencies.
+      tf_var_file: Path (or sequence of paths) to terraform variable
+        configuration files relative to `self.tfdir` or absolute.
+      plan_file: Optional saved binary plan file (created with `plan_out`) to
+        apply directly.
     """
     cmd_args = parse_args(input=input, color=color, auto_approve=auto_approve,
                           tf_vars=tf_vars, targets=targets,
                           tf_var_file=tf_var_file, **kw)
+    if plan_file is not None:
+      cmd_args.append(str(plan_file))
     return self.execute_command('apply', *cmd_args).out
 
-  @_cache
   def output(self, name: Optional[str] = None, color: bool = False,
-             json_format: bool = True, use_cache: bool = False,
-             **kw: Any) -> Union[str, dict]:
+             json_format: bool = True,
+             **kw: Any) -> Union[str, TerraformValueDict]:
     """Run Terraform output command."""
     cmd_args = []
     if name:
@@ -655,24 +605,24 @@ class TerraformTest(object):
       try:
         output = self._output_formatter(output)
       except json.JSONDecodeError as e:
-        _LOGGER.warning(f'error decoding output: {e}')
+        _LOGGER.warning('error decoding output: %s', e)
     return output
 
-  @_cache
-  def destroy(self, color: bool = False, auto_approve: bool = True,
-              tf_vars: Optional[Dict[str, Any]] = None,
-              targets: Optional[List[str]] = None,
-              tf_var_file: Optional[Union[str, List[str]]] = None,
-              use_cache: bool = False, **kw: Any) -> str:
+  def destroy(self, input: bool = False, color: bool = False,
+              auto_approve: bool = True, tf_vars: Optional[Dict[str,
+                                                                Any]] = None,
+              targets: Optional[Sequence[str]] = None,
+              tf_var_file: Optional[Union[PathType, Sequence[PathType]]] = None,
+              **kw: Any) -> str:
     """Run Terraform destroy command."""
-    cmd_args = parse_args(color=color, auto_approve=auto_approve,
+    cmd_args = parse_args(input=input, color=color, auto_approve=auto_approve,
                           tf_vars=tf_vars, targets=targets,
                           tf_var_file=tf_var_file, **kw)
     return self.execute_command('destroy', *cmd_args).out
 
   def refresh(self, color: bool = False, lock: bool = False,
               tf_vars: Optional[Dict[str, Any]] = None,
-              targets: Optional[List[str]] = None, **kw: Any) -> str:
+              targets: Optional[Sequence[str]] = None, **kw: Any) -> str:
     """Run Terraform refresh command."""
     cmd_args = parse_args(color=color, lock=lock, tf_vars=tf_vars,
                           targets=targets, **kw)
@@ -682,39 +632,53 @@ class TerraformTest(object):
     """Pull state."""
     state = self.execute_command('state', 'pull')
     try:
-      state = TerraformState(json.loads(state.out))
+      return TerraformState(json.loads(state.out))
     except json.JSONDecodeError as e:
-      _LOGGER.warning(f'error decoding state: {e}')
-    return state
+      _LOGGER.warning('error decoding state: %s', e)
+      return state.out
 
-  def execute_command(self, cmd: str, *cmd_args: str) -> TerraformCommandOutput:
+  def execute_command(self, cmd: str, *cmd_args: Any) -> TerraformCommandOutput:
     """Run arbitrary Terraform command."""
     _LOGGER.debug([cmd, cmd_args])
-    cmdline = [self.binary, cmd]
-    cmdline += cmd_args
+    cmdline = [str(self.binary), cmd, *(str(a) for a in cmd_args)]
     _LOGGER.info(cmdline)
-    retcode = None
-    full_output_lines = []
+    full_output_lines: List[str] = []
+    err_chunks: List[str] = []
     try:
-      stderr_mode = subprocess.STDOUT if os.name == 'nt' else subprocess.PIPE
-      p = subprocess.Popen(cmdline, stdout=subprocess.PIPE, stderr=stderr_mode,
-                           cwd=self.tfdir, env=self.env,
+      p = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE, cwd=self.tfdir, env=self.env,
                            universal_newlines=True, encoding='utf-8',
                            errors='ignore')
-      while True:
-        output = p.stdout.readline()
-        if output == '' and p.poll() is not None:
-          break
-        if output:
-          _LOGGER.info(output.strip())
-          full_output_lines.append(output)
-      retcode = p.poll()
-      p.wait()
     except FileNotFoundError as e:
-      raise TerraformTestError(f'Terraform executable not found: {e}')
-    _, err = p.communicate()
-    full_output = "".join(full_output_lines)
-    if retcode in [1, 11]:
+      if not self.tfdir.is_dir():
+        raise TerraformTestError(
+            f'Terraform directory not found: {self.tfdir}') from e
+      raise TerraformTestError(f'Terraform executable not found: {e}') from e
+
+    def _drain_stderr(pipe: Any) -> None:
+      try:
+        for line in pipe:
+          err_chunks.append(line)
+      finally:
+        pipe.close()
+
+    stderr_thread = threading.Thread(target=_drain_stderr, args=(p.stderr,),
+                                     daemon=True)
+    stderr_thread.start()
+    assert p.stdout is not None
+    try:
+      for output in p.stdout:
+        _LOGGER.info(output.strip())
+        full_output_lines.append(output)
+    finally:
+      p.stdout.close()
+    retcode = p.wait()
+    stderr_thread.join()
+    full_output = ''.join(full_output_lines)
+    err = ''.join(err_chunks)
+    allowed_codes = (0, 2) if (cmd == 'plan' and
+                               '-detailed-exitcode' in cmdline[2:]) else (0,)
+    if retcode not in allowed_codes:
       message = f'Error running command {cmd}: {retcode} {full_output} {err}'
       _LOGGER.critical(message)
       raise TerraformTestError(message, err)

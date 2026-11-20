@@ -21,12 +21,24 @@ def test_tfdir_as_path():
   with tempfile.TemporaryDirectory() as tmpdir:
     tmpdir_path = Path(tmpdir).resolve()
     tf = tftest.TerraformTest(tmpdir_path)
-    # The regression: tf.tfdir / 'something' throws TypeError
-    # if tf.tfdir is converted to a string.
+    assert isinstance(tf.tfdir, Path)
     assert (tf.tfdir / 'something') == tmpdir_path / 'something'
 
 
 def test_tfdir_as_str():
   with tempfile.TemporaryDirectory() as tmpdir:
     tf = tftest.TerraformTest(tmpdir)
-    assert isinstance(tf.tfdir, str)
+    assert isinstance(tf.tfdir, Path)
+    assert (tf.tfdir / 'something') == Path(tmpdir) / 'something'
+
+
+def test_tfdir_relative():
+  with tempfile.TemporaryDirectory() as tmpdir:
+    sub = Path(tmpdir) / 'child'
+    sub.mkdir()
+    tf_from_str = tftest.TerraformTest('child', basedir=tmpdir)
+    tf_from_path = tftest.TerraformTest(Path('child'), basedir=Path(tmpdir))
+    assert isinstance(tf_from_str.tfdir, Path)
+    assert isinstance(tf_from_path.tfdir, Path)
+    assert tf_from_str.tfdir == sub
+    assert tf_from_path.tfdir == sub

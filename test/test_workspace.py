@@ -13,19 +13,19 @@
 # limitations under the License.
 "Test init and plan using an actual example."
 
+from pathlib import Path
 import pytest
 import tftest
-import shutil
-import os
 
 
 @pytest.fixture(scope='module')
 def terraform_test(fixtures_dir):
-  tf = tftest.TerraformTest('plan_no_variables', fixtures_dir)
-  tf.setup()
-  yield tf
-  shutil.rmtree(os.path.join(tf.tfdir, 'terraform.tfstate.d'))
-  os.remove(os.path.join(tf.tfdir, '.terraform.lock.hcl'))
+  with tftest.TerraformTest('plan_no_variables', fixtures_dir) as tf:
+    tf.setup()
+    tf_dir = tf.tfdir
+    yield tf
+  assert not (Path(tf_dir) / 'terraform.tfstate.d').exists()
+  assert not (Path(tf_dir) / '.terraform.lock.hcl').exists()
 
 
 def test_new_workspace(terraform_test):

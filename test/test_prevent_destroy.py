@@ -13,6 +13,8 @@
 # limitations under the License.
 "Test init and plan with prevent_destroy lifecycles"
 import logging
+from pathlib import Path
+import shutil
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -20,19 +22,40 @@ import tftest
 
 
 def test_with_no_lifecycle_override(fixtures_dir):
-  tf = tftest.TerraformTest('prevent_destroy', fixtures_dir)
-  tf.setup()
-  tf.apply(auto_approve=True)
-  with pytest.raises(tftest.TerraformTestError):
+  with tftest.TerraformTest('prevent_destroy', fixtures_dir) as tf:
+    tf.setup()
+    tf.apply(auto_approve=True)
+    with pytest.raises(tftest.TerraformTestError):
+      tf.destroy(auto_approve=True)
+    tf.setup(disable_prevent_destroy=True)
     tf.destroy(auto_approve=True)
-    tf.output()
 
 
 def test_with_with_lifecycle_override(fixtures_dir):
-  tf = tftest.TerraformTest('prevent_destroy', fixtures_dir)
-  tf.setup(disable_prevent_destroy=True)
-  tf.apply(auto_approve=True)
-  tf.destroy(auto_approve=True)
+  with tftest.TerraformTest('prevent_destroy', fixtures_dir) as tf:
+    tf.setup(disable_prevent_destroy=True)
+    tf.apply(auto_approve=True)
+    tf.destroy(auto_approve=True)
+
+
+def test_compact_syntax_and_idempotent_setup(tmp_path, monkeypatch):
+  mod_dir = tmp_path / 'bkp_mod'
+  mod_dir.mkdir()
+  main_tf = mod_dir / 'main.tf'
+  original = ('resource "terraform_data" "x" {\n'
+              '  lifecycle {\n'
+              '    prevent_destroy=true\n'
+              '  }\n'
+              '}\n')
+  main_tf.write_text(original)
+  monkeypatch.chdir(tmp_path)
+  with tftest.TerraformTest('./bkp_mod') as tf:
+    tf.setup(disable_prevent_destroy=True)
+    tf.setup(disable_prevent_destroy=True)
+    tf.apply(auto_approve=True)
+    tf.destroy(auto_approve=True)
+  assert main_tf.read_text() == original
+  assert not (mod_dir / 'main.tf.bkp').exists()
 
 
 @patch('tftest.shutil.copy')
