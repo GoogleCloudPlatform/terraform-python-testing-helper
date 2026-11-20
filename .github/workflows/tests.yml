@@ -21,6 +21,9 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 env:
   GOOGLE_APPLICATION_CREDENTIALS: "/home/runner/credentials.json"
   PYTEST_ADDOPTS: "--color=yes"
@@ -36,38 +39,42 @@ jobs:
         python-version: ["3.10", "3.13"]
         iac: ["terraform", "opentofu"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Config auth
         id: auth
         run: |
           echo '{"type": "service_account", "project_id": "test-only"}' \
-            | tee -a $GOOGLE_APPLICATION_CREDENTIALS
+            | tee -a "$GOOGLE_APPLICATION_CREDENTIALS"
 
       - name: Set up Python
         id: python-setup
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Set up Terraform
         if: matrix.iac == 'terraform'
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_wrapper: false
 
       - name: Set up OpenTofu
         if: matrix.iac == 'opentofu'
-        uses: opentofu/setup-opentofu@v1
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_wrapper: false
 
       - name: Run tests
         id: python-test
+        env:
+          IAC_FLAVOUR: ${{ matrix.iac }}
         run: |
-          mkdir -p ${{ env.TF_PLUGIN_CACHE_DIR }}
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
           pip install -r DEV-REQUIREMENTS.txt
-          if [ "${{ matrix.iac }}" = "opentofu" ]; then
+          if [ "$IAC_FLAVOUR" = "opentofu" ]; then
             pytest -vv --tf-binary=tofu
           else
             pytest -vv --tf-binary=terraform

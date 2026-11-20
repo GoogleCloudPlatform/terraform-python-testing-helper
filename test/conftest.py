@@ -23,8 +23,8 @@ def pytest_addoption(parser):
                    help='Terraform or OpenTofu binary to use in tests.')
 
 
-@pytest.fixture(autouse=True)
-def configure_tf_binary(request, monkeypatch):
+@pytest.fixture(scope='session', autouse=True)
+def configure_tf_binary(request):
   binary = request.config.getoption('--tf-binary')
   if binary != 'terraform':
     orig_init = tftest.TerraformTest.__init__
@@ -32,7 +32,11 @@ def configure_tf_binary(request, monkeypatch):
     def _init(self, tfdir, basedir=None, binary=binary, env=None):
       orig_init(self, tfdir, basedir=basedir, binary=binary, env=env)
 
-    monkeypatch.setattr(tftest.TerraformTest, '__init__', _init)
+    with pytest.MonkeyPatch.context() as mp:
+      mp.setattr(tftest.TerraformTest, '__init__', _init)
+      yield
+  else:
+    yield
 
 
 @pytest.fixture(scope='session')
