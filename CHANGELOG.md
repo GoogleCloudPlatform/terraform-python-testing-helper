@@ -3,7 +3,19 @@
 All notable changes to this project will be documented in this file.
 <!-- markdownlint-disable MD024 -->
 
-## [Unreleased] <!-- from: 2023-10-11 08:39:19+00:00 to: None since: v1.8.5 -->
+## [Unreleased]
+
+## [2.0.0] - 2026-11-20
+
+### BREAKING CHANGES
+
+- Requires Python 3.10+, removes `enable_cache`/`use_cache` method caching, and standardizes `TerraformTest.tfdir` as a `pathlib.Path` object. [[#95](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/95)]
+
+- [[#95](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/95)] Release v2.0.0: cleanup, bug fixes, and packaging/CI modernization ([ludoo](https://github.com/ludoo))
+
+## [1.8.8] - 2026-06-29 <!-- from: 2026-03-31 08:05:11+00:00 to: 2026-06-29 13:52:30+00:00 since: v1.8.7 -->
+
+- [[#93](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/pull/93)] Fix TypeError when calling decorated methods with positional arguments ([ludoo](https://github.com/ludoo)) <!-- 2026-06-29 13:47:18+00:00 -->
 
 ## [1.8.7] - 2026-03-31
 
@@ -216,7 +228,9 @@ All notable changes to this project will be documented in this file.
 <!-- 2019-09-10 06:58:18+00:00 < None -->
 
 <!-- markdown-link-check-disable -->
-[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.7...HEAD
+[Unreleased]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.8...v2.0.0
+[1.8.8]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.7...v1.8.8
 [1.8.7]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.4...v1.8.7
 [1.8.5]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.4...v1.8.5
 [1.8.4]: https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/compare/v1.8.3...v1.8.4
