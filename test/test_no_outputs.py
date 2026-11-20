@@ -19,9 +19,9 @@ import tftest
 
 @pytest.fixture(scope="module")
 def plan(fixtures_dir):
-  tf = tftest.TerraformTest('no_outputs', fixtures_dir)
-  tf.setup(extra_files=['plan.auto.tfvars'])
-  return tf.plan(output=True)
+  with tftest.TerraformTest('no_outputs', fixtures_dir) as tf:
+    tf.setup(extra_files=['plan.auto.tfvars'])
+    yield tf.plan(output=True)
 
 
 def test_variables(plan):

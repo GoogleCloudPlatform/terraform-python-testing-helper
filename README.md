@@ -1,29 +1,29 @@
-# Python Test Helper for Terraform
+# Python Test Helper for Terraform and OpenTofu
 
-This simple helper facilitates testing Terraform modules from Python unit tests, by wrapping the Terraform executable and exposing convenience methods to set up fixtures, execute Terraform commands, and parse their output.
+This simple helper facilitates testing Terraform and OpenTofu modules from Python unit tests by wrapping the `terraform` (or `tofu`) executable and exposing convenience methods to set up fixtures, execute commands, and parse their output.
 
-It allows for different types of tests: lightweight tests that only use Terraform `init` and `plan` to ensure code is syntactically correct and the right number and type of resources should be created, or full-fledged tests that run the full `apply`/`output`/`destroy` cycle, and can then be used to test the actual created resources, or the state file.
+It supports both lightweight tests that only run `init` and `plan` to ensure code is valid and creates the expected resources, and full end-to-end tests that run `apply`, `output`, and `destroy` against live environments or local state.
 
-As an additional convenience, the module also provides an easy way to request and access the plan output (via `terraform plan -out` and `terraform show`) and the outputs (via `terraform output -json`), and return them wrapped in simple classes that streamline accessing their attributes.
+As an additional convenience, the module provides parsed wrappers around JSON plan output (via `terraform plan -out` and `terraform show -json`), module outputs (via `terraform output -json`), and pulled state (`terraform state pull`).
 
-This module is heavily inspired by two projects: [Terratest](https://github.com/gruntwork-io/terratest) for the lightweight approach to testing Terraform, and [python-terraform](https://github.com/beelit94/python-terraform) for wrapping the Terraform command in Python.
+This module is inspired by [Terratest](https://github.com/gruntwork-io/terratest) for the lightweight approach to testing Terraform, and [python-terraform](https://github.com/beelit94/python-terraform) for wrapping the CLI in Python.
 
 ## Example Usage
 
-The [`test`](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/tree/master/test) folder contains simple examples on how to write tests for both `plan` and `apply`, using either synthetic fixtures (simple representations of the plan output and output files), or minimal root modules. More examples can be found in the [Cloud Foundation Fabric](https://github.com/terraform-google-modules/cloud-foundation-fabric) repository, for which this module was developed.
+The [`test`](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/tree/master/test) folder contains examples of tests for both `plan` and `apply`, using synthetic JSON fixtures and minimal root modules. Extensive real-world usage can be found in the [Cloud Foundation Fabric](https://github.com/GoogleCloudPlatform/cloud-foundation-fabric) repository, for which this module was originally developed.
 
-This is a test that uses plan output on an actual module:
+Using `TerraformTest` as a context manager ensures linked files and runtime artifacts (`.terraform/`, state files, and generated lockfiles) are cleaned up deterministically when the block exits:
 
-```hcl
+```python
 import pytest
 import tftest
 
 
 @pytest.fixture
 def plan(fixtures_dir):
-  tf = tftest.TerraformTest('plan', fixtures_dir)
-  tf.setup(extra_files=['plan.auto.tfvars'])
-  return tf.plan(output=True)
+  with tftest.TerraformTest('plan', fixtures_dir) as tf:
+    tf.setup(extra_files=['plan.auto.tfvars'])
+    yield tf.plan(output=True)
 
 
 def test_variables(plan):
@@ -46,49 +46,28 @@ def test_modules(plan):
   assert res['values']['location'] == plan.variables['gcs_location']
 ```
 
-## Caching
-
-The `TerraformTest` `setup`, `init`, `plan`, `apply`, `output` and `destroy` methods have the ability to cache it's associate output to a local `.tftest-cache` directory. For subsequent calls of the method, the cached value can be returned instead of calling the actual underlying `terraform` command. Using the cache value can be significantly faster than running the Terraform command again especially if the command is time-intensive.
-
-To determine if the cache should be used, first a hash value is generated using the current `TerraformTest` instance `__init__` and calling method arguments, file contents of the `tfdir` and file contents of any `tf_var_file` or `extra_files` method argument. The hash value is compared to the hash value of the cached instance's associated arguments. If the hash is the same then the cache is used, otherwise the method is executed.
-
-The benefits of the caching feature include:
-- Faster setup time for testing terraform modules that don't change between testing sessions
-- Writing tests without worrying about errors within their test code resulting in the Terraform setup logic to run again
-
-Please see the following example for how to use it:
+To inspect or reuse a binary plan file directly, pass `plan_out` to `plan()` and optionally pass `plan_file` to `apply()`:
 
 ```python
-import pytest
-import tftest
-
-
-@pytest.fixture
-def output(fixtures_dir):
-  tf = tftest.TerraformTest('apply', fixtures_dir, enable_cache=True)
-  tf.setup(use_cache=True)
-  tf.apply(use_cache=True)
-  yield tf.output(use_cache=True)
-  tf.destroy(use_cache=True, **{"auto_approve": True})
-
-
-def test_apply(output):
-  value = output['triggers']
-  assert len(value) == 2
-  assert list(value[0].keys()) == ['name', 'template']
-  assert value[0]['name'] == 'one'
-
+def test_saved_plan(fixtures_dir, tmp_path):
+  plan_file = tmp_path / 'out.tfplan'
+  with tftest.TerraformTest('apply', fixtures_dir) as tf:
+    tf.setup()
+    tf.plan(plan_out=plan_file, tf_vars={'names': ['one']})
+    tf.apply(plan_file=plan_file)
+    assert tf.output()['triggers'][0]['name'] == 'one'
+    tf.destroy()
 ```
 
-
+To run against OpenTofu instead of Terraform, pass `binary='tofu'` when instantiating `TerraformTest`.
 
 ## Compatibility
 
-Starting from version `1.0.0` Terraform `0.12` is required, and tests written with previous versions of this module are incompatible. Check the [`CHANGELOG.md`](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/blob/master/CHANGELOG.md) file for details on what's changed.
+Version `2.0.0` requires Python `3.10` or newer, standardizes `tf.tfdir` as a `pathlib.Path` object, and removes the experimental method caching layer (`enable_cache` / `use_cache`). Terragrunt support was removed in `1.8.6`. Check [`CHANGELOG.md`](https://github.com/GoogleCloudPlatform/terraform-python-testing-helper/blob/master/CHANGELOG.md) for full release history.
 
 ## Testing
 
-Tests use the `pytest` framework and have no other dependency except on the Terraform binary. The version used during development is in the `DEV-REQUIREMENTS.txt` file.
+Tests use `pytest` and have no runtime dependencies beyond a `terraform` or `tofu` binary (`pytest --tf-binary=tofu`). Development dependencies are listed in `DEV-REQUIREMENTS.txt`.
 
 ## Disclaimer
 

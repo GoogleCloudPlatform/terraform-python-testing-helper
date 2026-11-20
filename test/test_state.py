@@ -37,3 +37,40 @@ def test_resources(state):
   res = state.resources['module.vpc-remote.google_compute_network.network']
   assert res['mode'] == 'managed'
   assert res['instances'][0]['attributes']['name'] == 'remote'
+
+
+def test_root_and_data_resources_and_empty_state():
+  raw = {
+      'version':
+          4,
+      'resources': [
+          {
+              'mode': 'managed',
+              'type': 'null_resource',
+              'name': 'root_item',
+              'instances': [],
+          },
+          {
+              'mode': 'data',
+              'type': 'null_resource',
+              'name': 'root_item',
+              'instances': [],
+          },
+          {
+              'module': 'module.child',
+              'mode': 'data',
+              'type': 'google_client_config',
+              'name': 'current',
+              'instances': [],
+          },
+      ],
+  }
+  st = tftest.TerraformState(raw)
+  assert set(st.resources.keys()) == {
+      'null_resource.root_item',
+      'data.null_resource.root_item',
+      'module.child.data.google_client_config.current',
+  }
+  assert not hasattr(st, 'nonexistent_attr')
+  empty = tftest.TerraformState({'version': 4})
+  assert empty.resources == {}

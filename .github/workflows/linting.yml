@@ -14,25 +14,30 @@
 
 name: Linting
 on:
+  push:
+    branches:
+      - master
   pull_request:
     branches:
       - master
-    tags:
-      - ci
-      - lint
+
+permissions:
+  contents: read
 
 jobs:
   linting:
     name: Linting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         id: python-setup
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.9"
+          python-version: "3.13"
 
       - name: Install dependencies
         id: python-dependencies
@@ -42,10 +47,10 @@ jobs:
       - name: Boilerplate
         id: boilerplate
         run: |
-          python3 .github/workflows/scripts/check_boilerplate.py $GITHUB_WORKSPACE
+          python3 .github/workflows/scripts/check_boilerplate.py "$GITHUB_WORKSPACE"
 
       - name: Check python formatting
         id: lint
         run: |
           yapf --diff --recursive --parallel \
-           *.py test
+            *.py test

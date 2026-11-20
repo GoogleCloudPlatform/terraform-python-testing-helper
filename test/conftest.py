@@ -14,6 +14,29 @@
 
 import os
 import pytest
+import tftest
+
+
+def pytest_addoption(parser):
+  parser.addoption('--tf-binary', action='store',
+                   default=os.environ.get('TFTEST_BINARY', 'terraform'),
+                   help='Terraform or OpenTofu binary to use in tests.')
+
+
+@pytest.fixture(scope='session', autouse=True)
+def configure_tf_binary(request):
+  binary = request.config.getoption('--tf-binary')
+  if binary != 'terraform':
+    orig_init = tftest.TerraformTest.__init__
+
+    def _init(self, tfdir, basedir=None, binary=binary, env=None):
+      orig_init(self, tfdir, basedir=basedir, binary=binary, env=env)
+
+    with pytest.MonkeyPatch.context() as mp:
+      mp.setattr(tftest.TerraformTest, '__init__', _init)
+      yield
+  else:
+    yield
 
 
 @pytest.fixture(scope='session')

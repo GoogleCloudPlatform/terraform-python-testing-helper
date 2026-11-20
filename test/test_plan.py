@@ -13,6 +13,11 @@
 # limitations under the License.
 "Test the plan output wrapper classes."
 
+import copy
+from pathlib import Path
+import pickle
+import shutil
+import tempfile
 import pytest
 import tftest
 
@@ -106,3 +111,47 @@ def test_plan_prior_state(plan_out):
 def test_plan_no_prior_state(plan_out_no_prior):
   prior_resources = plan_out_no_prior.prior_resources
   assert not prior_resources
+
+
+def test_plan_null_prior_state():
+  plan = tftest.TerraformPlanOutput({'prior_state': None, 'variables': None})
+  assert plan.prior_resources == {}
+  assert dict(plan.variables) == {}
+
+
+def test_plan_getattr_and_serialization(plan_out):
+  assert not hasattr(plan_out, 'nonexistent_attribute')
+  assert getattr(plan_out, 'nonexistent_attribute', 'fallback') == 'fallback'
+  copied = copy.deepcopy(plan_out)
+  assert copied.format_version == plan_out.format_version
+  unpickled = pickle.loads(pickle.dumps(plan_out))
+  assert unpickled.resources == plan_out.resources
+
+
+def test_plan_output_does_not_leak_temp_files(fixtures_dir):
+  tmp_root = Path(tempfile.gettempdir())
+  before = set(tmp_root.glob('tmp*'))
+  with tftest.TerraformTest('plan_no_resource_changes', fixtures_dir) as tf:
+    tf.setup()
+    result = tf.plan(output=True)
+    assert result.outputs['just_an_output'] == 'Hello, plan!'
+  after = set(tmp_root.glob('tmp*'))
+  assert after - before == set()
+
+
+def test_plan_out_and_apply_plan_file(fixtures_dir, tmp_path):
+  mod_dir = tmp_path / 'apply_mod'
+  shutil.copytree(Path(fixtures_dir) / 'apply', mod_dir)
+  saved_plan = tmp_path / 'saved.tfplan'
+
+  with tftest.TerraformTest(mod_dir) as tf:
+    tf.setup()
+    plan = tf.plan(output=True, plan_out=saved_plan,
+                   tf_vars={'names': ['alpha']})
+    assert saved_plan.is_file()
+    assert 'null_resource.sample["alpha"]' in plan.resources
+    tf.apply(plan_file=saved_plan)
+    out = tf.output()
+    assert len(out['triggers']) == 1
+    assert out['triggers'][0]['name'] == 'alpha'
+  assert saved_plan.is_file()

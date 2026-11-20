@@ -20,7 +20,10 @@ import re
 import sys
 
 
-_EXCLUDE_DIRS = ('.git', '.terraform')
+_EXCLUDE_DIRS = (
+    '.git', '.terraform', '.venv', 'venv', 'env', 'build', 'dist',
+    '.pytest_cache', '__pycache__'
+)
 _MATCH_FILES = (
     'Dockerfile', '.py', '.sh', '.tf', '.yaml', '.yml'
 )
@@ -41,9 +44,10 @@ def main(dir):
       if fname in _MATCH_FILES or os.path.splitext(fname)[1] in _MATCH_FILES:
         fpath = os.path.abspath(os.path.join(root, fname))
         try:
-          if not _MATCH_RE.search(open(fpath).read()):
-            errors.append(fpath)
-        except (IOError, OSError):
+          with open(fpath, encoding='utf-8', errors='ignore') as handle:
+            if not _MATCH_RE.search(handle.read()):
+              errors.append(fpath)
+        except OSError:
           warnings.append(fpath)
   if warnings:
     print('The following files cannot be accessed:')

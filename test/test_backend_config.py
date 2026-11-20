@@ -11,18 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"Test the plan output wrapper classes."
+"Test local backend configuration arguments."
 
+from pathlib import Path
+import shutil
 import pytest
 import tftest
 
 
 @pytest.fixture
-def run_init(fixtures_dir):
+def run_init(fixtures_dir, tmp_path):
+  mod_dir = tmp_path / 'backend_config'
+  shutil.copytree(Path(fixtures_dir) / 'backend_config', mod_dir)
 
   def init_runner(**backend_config):
-    tf = tftest.TerraformTest('apply', fixtures_dir)
-    tf.setup(init_vars=backend_config)
+    with tftest.TerraformTest(mod_dir) as tf:
+      tf.setup(init_vars=backend_config)
+      tf.apply()
+      assert (mod_dir / backend_config['path']).is_file()
 
   return init_runner
 
